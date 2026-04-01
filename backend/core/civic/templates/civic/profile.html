@@ -1,0 +1,337 @@
+{% extends "base.html" %}
+{% load civic_extras %}
+{% block title %}My Profile{% endblock %}
+{% block topbar_title %}My Profile{% endblock %}
+{% block content %}
+<section class="profile-page fade-in">
+  <input type="hidden" name="complaint_lat" id="complaintLat">
+  <input type="hidden" name="complaint_lng" id="complaintLng">
+  <input type="hidden" name="complaint_address" id="complaintAddress">
+  <p id="detectedAddress" class="page-subtitle" style="display:none;"></p>
+
+  <div class="profile-top-actions">
+    <button class="btn-secondary" type="button">Export Data</button>
+    <button class="btn-secondary" type="button">Edit Profile</button>
+  </div>
+
+  <article class="card profile-hero-card">
+    <div class="card-body profile-hero">
+      <div class="profile-hero-left">
+        <div class="hero-avatar">{{ request.user.username|first|upper }}</div>
+        <div>
+          <h1 class="page-title">{{ request.user.username }}</h1>
+          <p class="page-subtitle">{{ request.user.email|default:"No email set" }} | {{ request.user.phone|default:"No phone set" }}</p>
+          <p class="page-subtitle">Member since {{ request.user.date_joined|date:"M Y" }}</p>
+        </div>
+      </div>
+      <div class="profile-hero-right">
+        <div class="hero-stat"><span class="hero-stat-num">{{ total_sessions }}</span><span class="hero-stat-label">Sessions</span></div>
+        <div class="hero-stat"><span class="hero-stat-num">{{ total_complaints }}</span><span class="hero-stat-label">Complaints</span></div>
+        <div class="hero-stat"><span class="hero-stat-num">{{ resolved_count }}</span><span class="hero-stat-label">Resolved</span></div>
+        <div class="hero-stat"><span class="hero-stat-num">{{ total_documents }}</span><span class="hero-stat-label">Documents</span></div>
+        <div class="hero-actions">
+          <button class="hero-action-btn" type="button">Download Report</button>
+          <button class="hero-action-btn" type="button">Share Profile</button>
+        </div>
+      </div>
+    </div>
+  </article>
+
+  <div class="two-col-grid profile-row" id="complaints">
+    <article class="card">
+      <div class="card-body">
+        <div class="row-title-wrap">
+          <h2>Recent Sessions</h2>
+          <a class="meta-link" href="{% url 'civic-profile' %}">View all</a>
+        </div>
+        <ul class="session-list-modern">
+          {% for session in recent_sessions %}
+            <li>
+              <div class="session-meta-dot status-{{ session.status }}"></div>
+              <div class="session-meta">
+                <strong>{{ session.service.name|default:"General civic support" }}</strong>
+                <span>{{ session.message_count }} messages | {{ session.updated_at|timesince }} ago</span>
+              </div>
+              <span class="session-badge status-{{ session.status }}">{{ session.status }}</span>
+            </li>
+          {% empty %}
+            <li>No sessions yet.</li>
+          {% endfor %}
+        </ul>
+      </div>
+    </article>
+
+    <article class="card complaints-section">
+      <div class="card-body">
+        <div class="row-title-wrap">
+          <h2>Complaints</h2>
+          <div class="section-meta">
+            {% if open_count > 0 %}<span class="count-badge badge-open">{{ open_count }} open</span>{% endif %}
+            {% if resolved_count > 0 %}<span class="count-badge badge-resolved">{{ resolved_count }} resolved</span>{% endif %}
+          </div>
+          <a class="meta-link" href="{% url 'civic-chat' %}">New complaint +</a>
+        </div>
+        {% for complaint in complaints %}
+        <div class="complaint-item">
+          <div class="ci-left">
+            <div class="ci-status-dot {% if complaint.status == 'resolved' %}dot-green{% elif complaint.status == 'in_progress' %}dot-blue{% elif complaint.status == 'escalated' %}dot-red{% else %}dot-amber{% endif %}"></div>
+            <div class="ci-info">
+              <div class="ci-id">{{ complaint.tracking_id }}</div>
+              <div class="ci-desc">{{ complaint.description|truncatechars:60 }}</div>
+              <div class="ci-meta">{{ complaint.created_at|timesince }} ago{% if complaint.service %} - {{ complaint.service }}{% endif %}</div>
+            </div>
+          </div>
+          <div class="ci-right">
+            <span class="status-badge {% if complaint.status == 'resolved' %}sb-green{% elif complaint.status == 'in_progress' %}sb-blue{% elif complaint.status == 'escalated' %}sb-red{% else %}sb-amber{% endif %}">
+              {% if complaint.status == 'open' %}Open{% elif complaint.status == 'in_progress' %}In Progress{% elif complaint.status == 'escalated' %}Escalated{% elif complaint.status == 'resolved' %}Resolved{% else %}{{ complaint.status|title }}{% endif %}
+            </span>
+            <div class="progress-steps">
+              <div class="ps-step ps-done"><div class="ps-dot"></div><div class="ps-label">Filed</div></div>
+              <div class="ps-line {% if complaint.status == 'in_progress' or complaint.status == 'resolved' or complaint.status == 'escalated' %}ps-line-done{% endif %}"></div>
+              <div class="ps-step {% if complaint.status == 'in_progress' or complaint.status == 'resolved' or complaint.status == 'escalated' %}ps-done{% endif %}"><div class="ps-dot"></div><div class="ps-label">In Progress</div></div>
+              <div class="ps-line {% if complaint.status == 'resolved' %}ps-line-done{% endif %}"></div>
+              <div class="ps-step {% if complaint.status == 'resolved' %}ps-done{% endif %}"><div class="ps-dot"></div><div class="ps-label">Resolved</div></div>
+            </div>
+          </div>
+        </div>
+        {% empty %}
+        <div class="empty-state">
+          <div class="es-icon">&#128203;</div>
+          <div class="es-text">No complaints yet</div>
+          <a href="{% url 'civic-chat' %}" class="es-link">File one via chat &rarr;</a>
+        </div>
+        {% endfor %}
+      </div>
+    </article>
+  </div>
+
+  <div class="three-col-grid profile-row">
+    <article class="card impact-card community-impact">
+      <div class="card-body">
+        <h2>Community Impact</h2>
+        <div class="impact-metrics">
+          <div><span>Reported</span><strong>{{ reported_count }}</strong></div>
+          <div><span>Resolved</span><strong>{{ resolved_count }}</strong></div>
+          <div><span>Resolution Rate</span><strong>{{ resolution_rate }}%</strong></div>
+          <div><span>City Rank</span><strong>#{{ city_rank }}</strong></div>
+        </div>
+      </div>
+    </article>
+
+    <article class="card">
+      <div class="card-body">
+        <h2>Profile Completion</h2>
+        <div class="completion-wrap">
+          <div class="comp-header">
+            <span>{{ profile_completion }}% complete</span>
+            <span class="comp-pct">{{ profile_completion }}%</span>
+          </div>
+          <div class="comp-bar"><div class="comp-fill" style="width: {{ profile_completion }}%"></div></div>
+          <div class="comp-checklist">
+            <div class="comp-item {% if completion_checks.name_contact %}done{% endif %}"><span class="comp-icon">{% if completion_checks.name_contact %}&#10003;{% else %}&#9675;{% endif %}</span>Name and Contact</div>
+            <div class="comp-item {% if completion_checks.address %}done{% endif %}"><span class="comp-icon">{% if completion_checks.address %}&#10003;{% else %}&#9675;{% endif %}</span>Address</div>
+            <div class="comp-item {% if completion_checks.aadhaar_linked %}done{% endif %}"><span class="comp-icon">{% if completion_checks.aadhaar_linked %}&#10003;{% else %}&#9675;{% endif %}</span>Aadhaar linked</div>
+            <div class="comp-item {% if completion_checks.phone %}done{% endif %}"><span class="comp-icon">{% if completion_checks.phone %}&#10003;{% else %}&#9675;{% endif %}</span>Phone number</div>
+            <div class="comp-item {% if completion_checks.id_proof %}done{% endif %}"><span class="comp-icon">{% if completion_checks.id_proof %}&#10003;{% else %}&#9675;{% endif %}</span>ID proof uploaded</div>
+          </div>
+        </div>
+      </div>
+    </article>
+
+    <article class="card">
+      <div class="card-body">
+        <h2>Achievement Badges</h2>
+        <div class="badges-grid">
+          <div class="abadge {% if achievements.first_report %}earned{% endif %}">
+            <div class="ab-icon">&#127775;</div>
+            <div class="ab-name">First Report</div>
+            {% if not achievements.first_report %}<div class="ab-lock">&#128274;</div>{% endif %}
+          </div>
+          <div class="abadge {% if achievements.three_issues %}earned{% endif %}">
+            <div class="ab-icon">&#128293;</div>
+            <div class="ab-name">3 Issues</div>
+            {% if not achievements.three_issues %}<div class="ab-lock">&#128274;</div>{% endif %}
+          </div>
+          <div class="abadge {% if achievements.quick_filer %}earned{% endif %}">
+            <div class="ab-icon">&#9889;</div>
+            <div class="ab-name">Quick Filer</div>
+            {% if not achievements.quick_filer %}<div class="ab-lock">&#128274;</div>{% endif %}
+          </div>
+          <div class="abadge {% if achievements.ten_resolved %}earned{% endif %}">
+            <div class="ab-icon">&#127942;</div>
+            <div class="ab-name">10 Resolved</div>
+            {% if not achievements.ten_resolved %}<div class="ab-lock">&#128274;</div>{% endif %}
+          </div>
+          <div class="abadge {% if achievements.top_citizen %}earned{% endif %}">
+            <div class="ab-icon">&#127757;</div>
+            <div class="ab-name">Top Citizen</div>
+            {% if not achievements.top_citizen %}<div class="ab-lock">&#128274;</div>{% endif %}
+          </div>
+        </div>
+      </div>
+    </article>
+  </div>
+
+  <div class="two-col-grid profile-row" id="documents">
+    <article class="card">
+      <div class="card-body">
+        <div class="row-title-wrap">
+          <h2>Saved Documents</h2>
+          <a class="meta-link" href="#">Upload new +</a>
+        </div>
+        <ul class="doc-list">
+          {% for doc in saved_documents %}
+            <li class="doc-item">
+              <div class="doc-icon">&#128196;</div>
+              <div class="doc-info">
+                <div class="doc-name">{{ doc.name }}</div>
+                <div class="doc-meta">{{ doc.type }} | {{ doc.size }} | {{ doc.uploaded }}</div>
+              </div>
+              <div class="doc-actions">
+                <a class="doc-btn" href="{{ doc.url }}" target="_blank" rel="noopener noreferrer">View</a>
+                <a class="doc-btn primary" href="{{ doc.url }}" download>Download</a>
+              </div>
+            </li>
+          {% endfor %}
+        </ul>
+      </div>
+    </article>
+
+    <article class="card">
+      <div class="card-body">
+        <h2>Escalation Timeline</h2>
+        {% if escalated_session %}
+          <p class="page-subtitle">Active session {{ escalated_session.complaint_tracking_id }}</p>
+          <ul class="timeline">
+            {% for event in escalation_events %}
+              <li class="timeline-item {{ event.state }}">
+                <span class="timeline-dot"></span>
+                <span>{{ event.label }}</span>
+                {% if event.note %}<p class="timeline-note">{{ event.note }}</p>{% endif %}
+              </li>
+            {% endfor %}
+          </ul>
+        {% else %}
+          <p class="page-subtitle">No escalated complaint in progress.</p>
+        {% endif %}
+      </div>
+    </article>
+  </div>
+
+  <div class="two-col-grid profile-row" id="settings">
+    <article class="card">
+      <div class="card-body">
+        <div class="row-title-wrap">
+          <h2>&#128276; Notifications</h2>
+        </div>
+        <div style="padding:16px;display:flex;align-items:center;justify-content:space-between">
+          <div style="font-size:13px;color:var(--muted)">
+            Manage your notification preferences
+          </div>
+          <a href="{% url 'civic-settings' %}#notifications"
+             style="font-size:12.5px;font-weight:600;color:var(--accent);text-decoration:none">
+            Go to Settings &rarr;
+          </a>
+        </div>
+      </div>
+    </article>
+
+    <article class="card">
+      <div class="card-body">
+        <h2>Activity Heatmap</h2>
+        <div class="hm-wrap">
+          <div class="hm-label">Activity over time (each cell = 1 week)</div>
+          <div id="activityHeatmap" class="hm-grid" data-activity='{{ activity_json|safe }}'></div>
+          <div class="hm-legend">
+            <span>Less</span>
+            <div class="lc" style="background: var(--border)"></div>
+            <div class="lc" style="background: color-mix(in srgb, var(--accent2) 35%, var(--card))"></div>
+            <div class="lc" style="background: color-mix(in srgb, var(--accent) 55%, var(--card))"></div>
+            <div class="lc" style="background: var(--accent)"></div>
+            <span>More</span>
+          </div>
+        </div>
+      </div>
+    </article>
+  </div>
+</section>
+
+<script>
+(function () {
+  document.querySelectorAll(".mini-progress").forEach((bar) => {
+    const step = Number(bar.dataset.step || 1);
+    const spans = bar.querySelectorAll("span");
+    spans.forEach((span, idx) => {
+      if (idx < step) span.classList.add("on");
+    });
+  });
+
+  const heatmap = document.getElementById("activityHeatmap");
+  if (heatmap) {
+    const data = JSON.parse(heatmap.dataset.activity || "[]");
+    heatmap.innerHTML = "";
+    const max = Math.max(...data, 1);
+    data.forEach((count) => {
+      const cell = document.createElement("span");
+      let level = "";
+      const intensity = count / max;
+      if (intensity > 0.75) level = "hc3";
+      else if (intensity > 0.4) level = "hc2";
+      else if (intensity > 0) level = "hc1";
+      cell.className = `hcell ${level}`.trim();
+      cell.title = `${count} sessions this week`;
+      heatmap.appendChild(cell);
+    });
+  }
+
+  function detectLocationForComplaint() {
+    if (!navigator.geolocation) return;
+    navigator.geolocation.getCurrentPosition(async (position) => {
+      const lat = position.coords.latitude.toFixed(6);
+      const lng = position.coords.longitude.toFixed(6);
+
+      const latField = document.getElementById("complaintLat");
+      const lngField = document.getElementById("complaintLng");
+      const addrField = document.getElementById("complaintAddress");
+      if (latField) latField.value = lat;
+      if (lngField) lngField.value = lng;
+
+      try {
+        const res = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json`, {
+          headers: { "Accept-Language": "en" },
+        });
+        const data = await res.json();
+        const address = data.display_name || `${lat}, ${lng}`;
+        if (addrField) addrField.value = address;
+        const addressDisplay = document.getElementById("detectedAddress");
+        if (addressDisplay) {
+          addressDisplay.textContent = `📍 ${address}`;
+          addressDisplay.style.display = "block";
+        }
+      } catch (e) {
+        if (addrField) addrField.value = `${lat}, ${lng}`;
+      }
+    }, () => {}, { enableHighAccuracy: true, timeout: 8000 });
+  }
+
+  detectLocationForComplaint();
+
+  setInterval(() => {
+    fetch(window.location.href, { credentials: "same-origin" })
+      .then((r) => r.text())
+      .then((html) => {
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(html, "text/html");
+        const newComplaints = doc.querySelector(".complaints-section");
+        const currentComplaints = document.querySelector(".complaints-section");
+        if (newComplaints && currentComplaints) currentComplaints.innerHTML = newComplaints.innerHTML;
+
+        const newImpact = doc.querySelector(".community-impact");
+        const currentImpact = document.querySelector(".community-impact");
+        if (newImpact && currentImpact) currentImpact.innerHTML = newImpact.innerHTML;
+      })
+      .catch(() => {});
+  }, 60000);
+})();
+</script>
+{% endblock %}

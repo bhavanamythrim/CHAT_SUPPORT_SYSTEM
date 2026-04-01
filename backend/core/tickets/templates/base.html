@@ -1,0 +1,231 @@
+{% load static ui_lang %}
+<!DOCTYPE html>
+<html lang="{% ui_lang %}" data-ui-lang="{% ui_lang %}">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}UdhaviBot{% endblock %}</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{% static 'tickets/styles.css' %}?v=20260326b">
+  {% block head %}{% endblock %}
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="sidebar">
+      <div class="sidebar-top">
+        <a href="{% url 'civic-landing' %}" class="sidebar-brand">
+          <img class="brand-logo-img" src="{% static 'civic/udhavibot-logo.png' %}" alt="UdhaviBot logo">
+          <span>UdhaviBot</span>
+        </a>
+
+        {% if request.user.is_authenticated %}
+          {% if request.resolver_match.url_name == 'civic-landing' or request.resolver_match.url_name == 'civic-chat' %}
+            <form method="POST" action="{% url 'civic-chat-end' %}">
+              {% csrf_token %}
+              {% if sidebar_sessions %}
+                <input type="hidden" name="session_id" value="{{ sidebar_sessions.0.id }}">
+              {% endif %}
+              <button type="submit" class="new-chat-btn" {% if not sidebar_sessions %}disabled{% endif %}>+ New Conversation</button>
+            </form>
+
+            <section class="session-history">
+              <h4>Recent Sessions</h4>
+              <ul>
+                {% for s in sidebar_sessions %}
+                  <li>
+                    <a href="{% url 'civic-chat' %}" class="session-item">
+                      <span class="status-dot status-{{ s.status }}"></span>
+                      <span class="session-copy">
+                        <span class="session-title">{{ s.title }}</span>
+                        <span class="session-time">{{ s.updated_at|timesince }} ago</span>
+                      </span>
+                    </a>
+                  </li>
+                {% empty %}
+                  <li class="session-empty">No recent chats.</li>
+                {% endfor %}
+              </ul>
+            </section>
+          {% endif %}
+        {% endif %}
+
+        <nav class="sidebar-nav nav-links">
+          <a href="{% url 'civic-chat' %}" class="nav-item {% if request.resolver_match.url_name == 'civic-chat' or request.resolver_match.url_name == 'civic-landing' %}active{% endif %}">
+            <span class="nav-icon">&#128172;</span><span>Chat</span>
+          </a>
+          <a href="{% url 'civic-profile' %}" class="nav-item {% if request.resolver_match.url_name == 'civic-profile' %}active{% endif %}">
+            <span class="nav-icon">&#128100;</span><span>Profile</span>
+          </a>
+          <a href="{% url 'civic-profile' %}#complaints" class="nav-item">
+            <span class="nav-icon">&#128203;</span><span>Complaints</span>
+            {% if open_complaint_count > 0 %}
+              <span class="nav-badge">{{ open_complaint_count }}</span>
+            {% endif %}
+          </a>
+          <a href="{% url 'civic-profile' %}#documents" class="nav-item">
+            <span class="nav-icon">&#128196;</span><span>Documents</span>
+          </a>
+          <a href="{% url 'civic-settings' %}" class="nav-item {% if request.resolver_match.url_name == 'civic-settings' %}active{% endif %}">
+            <span class="nav-icon">&#9881;</span><span>Settings</span>
+          </a>
+          {% if request.user.is_authenticated %}
+            {% if request.user.is_staff or request.user.groups.all|length > 0 or request.user.role == 'ADMIN' %}
+              <a href="{% url 'agent-dashboard' %}" class="nav-item {% if request.resolver_match.url_name == 'agent-dashboard' %}active{% endif %}">
+                <span class="nav-icon">&#127911;</span><span>Agent Panel</span>
+              </a>
+            {% endif %}
+            {% if request.user.is_staff or request.user.is_superuser or request.user.role == 'ADMIN' %}
+              <a href="/admin/" class="nav-item"><span class="nav-icon">&#128295;</span><span>Admin</span></a>
+            {% endif %}
+          {% endif %}
+        </nav>
+      </div>
+
+      <div class="sidebar-bottom">
+        {% if request.user.is_authenticated %}
+          <div class="user-box">
+            <span class="user-avatar">{{ request.user.username|first|upper }}</span>
+            <div>
+              <div class="user-name">{{ request.user.username }}</div>
+              <div class="user-role">{{ request.user.role }}</div>
+            </div>
+          </div>
+          <a href="{% url 'logout' %}" class="logout-link">Logout</a>
+        {% else %}
+          <a href="{% url 'login' %}" class="logout-link">Login</a>
+          <a href="{% url 'register' %}" class="logout-link">Register</a>
+        {% endif %}
+      </div>
+    </aside>
+
+    <main class="main">
+      <header class="main-topbar">
+        <div class="main-topbar-title">{% block topbar_title %}UdhaviBot{% endblock %}</div>
+        <div class="main-topbar-actions topbar-actions">
+          {% if request.user.is_authenticated %}
+            <div class="notif-wrap">
+              <a href="#" id="global-notif-link" class="notif-link tbtn icon-only" aria-label="Notifications" aria-haspopup="true" aria-expanded="false">
+                <span class="notif-bell">&#128276;</span>
+                {% if notif_count > 0 %}
+                  <span class="notif-dot" aria-hidden="true"></span>
+                {% endif %}
+              </a>
+              <div class="notif-panel">
+                <div class="notif-title">
+                  <strong>Notifications</strong>
+                  <a href="{% url 'notification-read-all' %}">Mark all read</a>
+                </div>
+                <ul class="notif-list">
+                  {% for n in notif_items %}
+                    <li class="notif-item {% if not n.is_read %}unread{% endif %}">
+                      <a href="{% url 'notification-read' n.id %}">
+                        <div class="notif-item-title">{{ n.title }}</div>
+                        <div class="notif-item-msg">{{ n.message }}</div>
+                      </a>
+                    </li>
+                  {% empty %}
+                    <li class="notif-empty">No new alerts.</li>
+                  {% endfor %}
+                </ul>
+              </div>
+            </div>
+          {% endif %}
+          <button id="text-size-toggle" class="theme-toggle tbtn icon-only" type="button" aria-label="Toggle large text">Aa</button>
+          <button id="theme-toggle" class="theme-toggle tbtn icon-only" type="button" aria-label="Toggle dark mode">&#9789;</button>
+        </div>
+      </header>
+
+      <section class="main-content">
+        {% if messages %}
+          <div class="alerts">
+            {% for message in messages %}
+              <div class="alert">{{ message }}</div>
+            {% endfor %}
+          </div>
+        {% endif %}
+        {% block content %}{% endblock %}
+      </section>
+    </main>
+  </div>
+
+  <script src="{% static 'civic/ui_i18n.js' %}?v=20260326a"></script>
+  <script>
+    (function () {
+      const key = "smart-civic-theme";
+      const textKey = "smart-civic-text";
+      const toggle = document.getElementById("theme-toggle");
+      const textToggle = document.getElementById("text-size-toggle");
+      const root = document.documentElement;
+      const notifWraps = Array.from(document.querySelectorAll(".notif-wrap"));
+
+      const saved = localStorage.getItem(key);
+      if (saved === "dark") {
+        root.setAttribute("data-theme", "dark");
+        if (toggle) toggle.textContent = "\u2600";
+      }
+      const savedText = localStorage.getItem(textKey);
+      if (savedText === "large") {
+        document.body.classList.add("large-text");
+      }
+
+      if (toggle) {
+        toggle.addEventListener("click", function () {
+          const dark = root.getAttribute("data-theme") !== "dark";
+          if (dark) {
+            root.setAttribute("data-theme", "dark");
+          } else {
+            root.removeAttribute("data-theme");
+          }
+          localStorage.setItem(key, dark ? "dark" : "light");
+          toggle.textContent = dark ? "\u2600" : "\u263D";
+        });
+      }
+
+      if (textToggle) {
+        textToggle.addEventListener("click", function () {
+          const isLarge = !document.body.classList.contains("large-text");
+          document.body.classList.toggle("large-text", isLarge);
+          localStorage.setItem(textKey, isLarge ? "large" : "normal");
+        });
+      }
+
+      function closeNotifPanels() {
+        notifWraps.forEach((wrap) => {
+          wrap.classList.remove("is-open");
+          const link = wrap.querySelector(".notif-link");
+          if (link) link.setAttribute("aria-expanded", "false");
+        });
+      }
+
+      notifWraps.forEach((wrap) => {
+        const link = wrap.querySelector(".notif-link");
+        const panel = wrap.querySelector(".notif-panel");
+        if (!link) return;
+
+        link.addEventListener("click", function (e) {
+          e.preventDefault();
+          if (!panel) return;
+          const willOpen = !wrap.classList.contains("is-open");
+          closeNotifPanels();
+          if (willOpen) {
+            wrap.classList.add("is-open");
+            link.setAttribute("aria-expanded", "true");
+          }
+        });
+      });
+
+      document.addEventListener("click", function (e) {
+        const clickedInsideNotif = e.target.closest(".notif-wrap");
+        if (!clickedInsideNotif) closeNotifPanels();
+      });
+
+      document.addEventListener("keydown", function (e) {
+        if (e.key === "Escape") closeNotifPanels();
+      });
+    })();
+  </script>
+</body>
+</html>
+

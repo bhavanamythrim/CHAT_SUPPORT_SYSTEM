@@ -1,0 +1,92 @@
+{% extends "base.html" %}
+{% block title %}Agent Dashboard{% endblock %}
+{% block topbar_title %}Agent Dashboard{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div class="page-title">Agent Dashboard</div>
+  <div class="page-sub">Your assigned sessions</div>
+</div>
+
+<div class="sessions-list">
+  {% for session in my_sessions %}
+  <div class="agent-session-card" id="session-{{ session.id }}">
+    <div class="asc-left">
+      <div class="asc-id">{{ session.complaint_tracking_id|default:session.id }}</div>
+      <div class="asc-user">&#128100; {{ session.user.username }}</div>
+      <div class="asc-service">{{ session.service|default:"General" }}</div>
+      <div class="asc-time">{{ session.created_at|timesince }} ago</div>
+    </div>
+
+    <div class="asc-right">
+      <span class="asc-status {% if session.agent_active %}status-active{% else %}status-waiting{% endif %}">
+        {% if session.agent_active %}You are active in this session{% else %}Waiting{% endif %}
+      </span>
+
+      {% if not session.agent_active %}
+      <button class="asc-btn btn-takeover" onclick="takeOver({{ session.id }})">Take Over</button>
+      {% endif %}
+
+      {% if session.agent_active %}
+      <button class="asc-btn btn-end" onclick="endTakeover({{ session.id }}, 'end')">End Takeover</button>
+      <button class="asc-btn btn-resolve" onclick="endTakeover({{ session.id }}, 'resolve')">Resolve</button>
+      {% endif %}
+
+      <a href="{% url 'civic-chat' %}?session={{ session.id }}" class="asc-btn btn-view" target="_blank">View Chat</a>
+    </div>
+  </div>
+  {% empty %}
+  <div class="empty-state"><div>No sessions assigned to you yet.</div></div>
+  {% endfor %}
+</div>
+
+<style>
+.page-header { padding: 20px 24px 16px; border-bottom: 1px solid var(--border); }
+.page-title { font-size: 20px; font-weight: 800; color: var(--text); letter-spacing: -0.02em; }
+.page-sub { font-size: 13px; color: var(--muted); margin-top: 3px; }
+.sessions-list { padding: 20px 24px; display: flex; flex-direction: column; gap: 12px; }
+.agent-session-card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 16px 18px; display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+.asc-left { flex: 1; }
+.asc-id { font-size: 10.5px; font-weight: 700; font-family: "JetBrains Mono", monospace; color: var(--accent); margin-bottom: 4px; }
+.asc-user { font-size: 13.5px; font-weight: 700; color: var(--text); margin-bottom: 2px; }
+.asc-service { font-size: 12px; color: var(--muted); }
+.asc-time { font-size: 11px; color: var(--muted); margin-top: 3px; }
+.asc-right { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
+.asc-status { font-size: 11px; font-weight: 600; padding: 4px 10px; border-radius: 20px; }
+.status-active { background: #f0fdf4; color: #15803d; border: 1px solid #bbf7d0; }
+.status-waiting { background: var(--bg); color: var(--muted); border: 1px solid var(--border); }
+.asc-btn { padding: 7px 13px; border-radius: 8px; font-size: 12px; font-weight: 600; cursor: pointer; border: none; text-decoration: none; display: inline-flex; align-items: center; gap: 5px; }
+.btn-takeover { background: var(--accent); color: #fff; }
+.btn-end { background: #fffbeb; color: #92400e; border: 1px solid #fde68a; }
+.btn-resolve { background: #f0fdf4; color: #15803d; border: 1px solid #bbf7d0; }
+.btn-view { background: var(--bg); color: var(--muted); border: 1px solid var(--border); }
+</style>
+
+<script>
+const CSRF = document.cookie.match(/csrftoken=([^;]+)/)?.[1] || "";
+
+async function takeOver(sessionId) {
+  const btn = document.querySelector(`#session-${sessionId} .btn-takeover`);
+  if (btn) { btn.textContent = "Taking over..."; btn.disabled = true; }
+  const res = await fetch(`/api/civic/sessions/${sessionId}/takeover/`, {
+    method: "POST",
+    headers: { "X-CSRFToken": CSRF, "Content-Type": "application/json" },
+    credentials: "same-origin",
+  });
+  const data = await res.json();
+  if (data.status === "ok") location.reload();
+  else alert(data.error || "Takeover failed");
+}
+
+async function endTakeover(sessionId, action) {
+  const res = await fetch(`/api/civic/sessions/${sessionId}/end-takeover/`, {
+    method: "POST",
+    headers: { "X-CSRFToken": CSRF, "Content-Type": "application/json" },
+    body: JSON.stringify({ action }),
+    credentials: "same-origin",
+  });
+  const data = await res.json();
+  if (data.status === "ok") location.reload();
+  else alert(data.error || "Action failed");
+}
+</script>
+{% endblock %}

@@ -1,0 +1,174 @@
+﻿{% extends "base.html" %}
+{% block title %}Login{% endblock %}
+{% block content %}
+<style>
+  .auth-card { font-size: 0.95rem; }
+  .auth-card h1 { font-size: 1.1rem; }
+  .auth-card p { font-size: 0.85rem; }
+  .auth-card select { font-size: 0.9rem; }
+</style>
+<section class="auth-screen fade-in">
+  <div class="auth-card card auth-contrast">
+    <div class="card-body">
+      <h1 id="login-title">Welcome Back</h1>
+      <p id="login-subtitle">Citizen login for UdhaviBot.</p>
+      <form method="post" action="{% url 'login' %}" class="form-grid" style="margin-top: 12px;">
+        {% csrf_token %}
+        {% if messages %}
+          {% for message in messages %}
+            <div class="error-msg show">&#9888; {{ message }}</div>
+          {% endfor %}
+        {% endif %}
+        <div>
+          <label for="username" id="label-username">Username</label>
+          <input id="username" type="text" name="username" required>
+        </div>
+        <div>
+          <label for="password" id="label-password">Password</label>
+          <div class="password-wrap">
+            <input id="password" type="password" name="password" required>
+            <button id="toggle-password" class="icon-btn" type="button" aria-label="Show or hide password">&#128065;</button>
+          </div>
+        </div>
+        <div>
+          <label for="language" id="label-language">Language Preference</label>
+          <select id="language" name="language" required>
+            <option value="en" {% if preferred_language == 'en' %}selected{% endif %}>English</option>
+            <option value="ta" {% if preferred_language == 'ta' %}selected{% endif %}>Tamil</option>
+            <option value="hi" {% if preferred_language == 'hi' %}selected{% endif %}>Hindi</option>
+            <option value="te" {% if preferred_language == 'te' %}selected{% endif %}>Telugu</option>
+            <option value="ml" {% if preferred_language == 'ml' %}selected{% endif %}>Malayalam</option>
+            <option value="kn" {% if preferred_language == 'kn' %}selected{% endif %}>Kannada</option>
+            <option value="mr" {% if preferred_language == 'mr' %}selected{% endif %}>Marathi</option>
+            <option value="bn" {% if preferred_language == 'bn' %}selected{% endif %}>Bengali</option>
+          </select>
+        </div>
+        <p class="meta-link"><a href="#" id="forgot-link">Forgot Password?</a></p>
+        <button class="btn-primary" type="submit" id="login-btn">Login</button>
+      </form>
+      <p class="meta-link"><span id="signup-prefix">New customer?</span> <a href="{% url 'register' %}" id="signup-link">Create account</a></p>
+    </div>
+  </div>
+</section>
+<script>
+  (function () {
+    const toggleBtn = document.getElementById("toggle-password");
+    const pwd = document.getElementById("password");
+    if (!toggleBtn || !pwd) return;
+    toggleBtn.addEventListener("click", () => {
+      const show = pwd.type === "password";
+      pwd.type = show ? "text" : "password";
+      toggleBtn.textContent = show ? "\u{1F648}" : "\u{1F441}";
+    });
+    const langSelect = document.getElementById("language");
+    const strings = {
+      en: {
+        title: "Welcome Back",
+        subtitle: "Citizen login for UdhaviBot.",
+        username: "Username",
+        password: "Password",
+        language: "Language Preference",
+        forgot: "Forgot Password?",
+        login: "Login",
+        signupPrefix: "New customer?",
+        signupLink: "Create account",
+      },
+      ta: {
+        title: "மீண்டும் வருக",
+        subtitle: "UdhaviBot குடிமக்கள் உள்நுழைவு.",
+        username: "பயனர் பெயர்",
+        password: "கடவுச்சொல்",
+        language: "மொழி விருப்பம்",
+        forgot: "கடவுச்சொல் மறந்துவிட்டதா?",
+        login: "உள்நுழை",
+        signupPrefix: "புதிய பயனர்?",
+        signupLink: "கணக்கு உருவாக்கவும்",
+      },
+      hi: {
+        title: "वापसी पर स्वागत है",
+        subtitle: "UdhaviBot नागरिक लॉगिन।",
+        username: "यूज़रनेम",
+        password: "पासवर्ड",
+        language: "भाषा चयन",
+        forgot: "पासवर्ड भूल गए?",
+        login: "लॉगिन",
+        signupPrefix: "नए उपयोगकर्ता?",
+        signupLink: "खाता बनाएं",
+      },
+      te: {
+        title: "మళ్లీ స్వాగతం",
+        subtitle: "UdhaviBot పౌర లాగిన్.",
+        username: "వినియోగదారు పేరు",
+        password: "పాస్‌వర్డ్",
+        language: "భాష ఎంపిక",
+        forgot: "పాస్‌వర్డ్ మర్చిపోయారా?",
+        login: "లాగిన్",
+        signupPrefix: "కొత్త వినియోగదారా?",
+        signupLink: "ఖాతా సృష్టించండి",
+      },
+      ml: {
+        title: "വീണ്ടും സ്വാഗതം",
+        subtitle: "UdhaviBot പൗര ലോഗിൻ.",
+        username: "ഉപയോക്തൃനാമം",
+        password: "പാസ്‌വേഡ്",
+        language: "ഭാഷ തിരഞ്ഞെടുപ്പ്",
+        forgot: "പാസ്‌വേഡ് മറന്നോ?",
+        login: "ലോഗിൻ",
+        signupPrefix: "പുതിയ ഉപയോക്താവോ?",
+        signupLink: "അക്കൗണ്ട് സൃഷ്ടിക്കുക",
+      },
+      kn: {
+        title: "ಮತ್ತೆ ಸ್ವಾಗತ",
+        subtitle: "UdhaviBot ನಾಗರಿಕ ಲಾಗಿನ್.",
+        username: "ಬಳಕೆದಾರ ಹೆಸರು",
+        password: "ಪಾಸ್ವರ್ಡ್",
+        language: "ಭಾಷಾ ಆಯ್ಕೆ",
+        forgot: "ಪಾಸ್ವರ್ಡ್ ಮರೆತಿರಾ?",
+        login: "ಲಾಗಿನ್",
+        signupPrefix: "ಹೊಸ ಬಳಕೆದಾರರೇ?",
+        signupLink: "ಖಾತೆ ರಚಿಸಿ",
+      },
+      mr: {
+        title: "पुन्हा स्वागत आहे",
+        subtitle: "UdhaviBot नागरिक लॉगिन.",
+        username: "वापरकर्तानाव",
+        password: "पासवर्ड",
+        language: "भाषा निवड",
+        forgot: "पासवर्ड विसरलात?",
+        login: "लॉगिन",
+        signupPrefix: "नवीन वापरकर्ता?",
+        signupLink: "खाते तयार करा",
+      },
+      bn: {
+        title: "আবার স্বাগতম",
+        subtitle: "UdhaviBot নাগরিক লগইন।",
+        username: "ইউজারনেম",
+        password: "পাসওয়ার্ড",
+        language: "ভাষা নির্বাচন",
+        forgot: "পাসওয়ার্ড ভুলে গেছেন?",
+        login: "লগইন",
+        signupPrefix: "নতুন ব্যবহারকারী?",
+        signupLink: "অ্যাকাউন্ট তৈরি করুন",
+      },
+    };
+
+    function applyLanguage(lang) {
+      const t = strings[lang] || strings.en;
+      document.getElementById("login-title").textContent = t.title;
+      document.getElementById("login-subtitle").textContent = t.subtitle;
+      document.getElementById("label-username").textContent = t.username;
+      document.getElementById("label-password").textContent = t.password;
+      document.getElementById("label-language").textContent = t.language;
+      document.getElementById("forgot-link").textContent = t.forgot;
+      document.getElementById("login-btn").textContent = t.login;
+      document.getElementById("signup-prefix").textContent = t.signupPrefix;
+      document.getElementById("signup-link").textContent = t.signupLink;
+    }
+
+    if (langSelect) {
+      applyLanguage(langSelect.value);
+      langSelect.addEventListener("change", (e) => applyLanguage(e.target.value));
+    }
+  })();
+</script>
+{% endblock %}

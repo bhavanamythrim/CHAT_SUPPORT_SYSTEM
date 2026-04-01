@@ -1,0 +1,282 @@
+﻿{% extends 'base.html' %}
+{% load static %}
+{% block title %}Settings{% endblock %}
+{% block topbar_title %}Settings{% endblock %}
+{% block content %}
+<style>
+.settings-wrap { max-width: 720px; margin: 0 auto; padding: 28px 24px 60px; }
+.settings-header { margin-bottom: 28px; }
+.settings-title { font-size: 22px; font-weight: 800; color: var(--text); letter-spacing: -0.03em; }
+.settings-sub { font-size: 13px; color: var(--muted); margin-top: 3px; }
+.toast-list { margin-bottom: 16px; }
+.toast { display: flex; align-items: center; gap: 8px; padding: 10px 14px; border-radius: 9px; font-size: 12.5px; font-weight: 500; margin-bottom: 8px; }
+.toast-success { background: #f0fdf4; border: 1px solid #bbf7d0; color: #15803d; }
+.toast-error { background: #fff1f2; border: 1px solid #fecdd3; color: #be123c; }
+.settings-section { background: var(--card); border: 1px solid var(--border); border-radius: 14px; overflow: hidden; margin-bottom: 16px; }
+.section-head { padding: 16px 20px 14px; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 10px; }
+.section-icon { width: 32px; height: 32px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 15px; flex-shrink: 0; }
+.si-blue { background: #eff6ff; }
+.si-purple { background: #faf5ff; }
+.si-green { background: #f0fdf4; }
+.si-amber { background: #fffbeb; }
+.si-red { background: #fff1f2; }
+.section-name { font-size: 14px; font-weight: 700; color: var(--text); letter-spacing: -0.01em; }
+.section-desc { font-size: 11.5px; color: var(--muted); margin-top: 1px; }
+.section-body { padding: 20px; }
+.field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 14px; }
+.field-row.full { grid-template-columns: 1fr; }
+.field-label { display: block; font-size: 10.5px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.09em; font-family: 'JetBrains Mono', monospace; margin-bottom: 6px; }
+.field-input, .field-select { width: 100%; padding: 10px 12px; background: var(--soft); border: 1.5px solid var(--border); border-radius: 9px; font-size: 13px; font-family: 'Plus Jakarta Sans', sans-serif; color: var(--text); outline: none; transition: all 0.18s; }
+.field-input:focus, .field-select:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1); background: #fff; }
+.save-btn { padding: 9px 20px; background: linear-gradient(135deg, var(--accent), var(--accent2)); border: none; border-radius: 8px; color: #fff; font-size: 13px; font-weight: 700; font-family: 'Plus Jakarta Sans', sans-serif; cursor: pointer; transition: all 0.15s; box-shadow: 0 2px 8px rgba(37, 99, 235, 0.25); }
+.save-btn:hover { opacity: 0.92; transform: translateY(-1px); }
+.toggle-row { display: flex; align-items: center; padding: 12px 0; border-bottom: 1px solid var(--border); gap: 12px; }
+.toggle-row:last-child { border-bottom: none; }
+.tr-icon { width: 32px; height: 32px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 15px; flex-shrink: 0; }
+.tr-info { flex: 1; }
+.tr-title { font-size: 13px; font-weight: 600; color: var(--text); }
+.tr-sub { font-size: 11.5px; color: var(--muted); margin-top: 1px; }
+.tog { width: 36px; height: 20px; border-radius: 10px; background: var(--accent); position: relative; cursor: pointer; flex-shrink: 0; transition: background 0.2s; border: none; outline: none; }
+.tog::after { content: ''; position: absolute; width: 16px; height: 16px; background: #fff; border-radius: 50%; top: 2px; left: 18px; transition: left 0.2s; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2); }
+.tog.off { background: var(--border); }
+.tog.off::after { left: 2px; }
+.option-pills { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 6px; }
+.opt-pill { padding: 8px 16px; border-radius: 9px; border: 1.5px solid var(--border); background: var(--soft); font-size: 12.5px; font-weight: 600; color: var(--muted); cursor: pointer; transition: all 0.15s; }
+.opt-pill:hover { border-color: #bfdbfe; color: var(--accent); }
+.opt-pill.selected { background: #eff6ff; border-color: var(--accent); color: var(--accent); }
+.danger-row { display: flex; align-items: center; justify-content: space-between; padding: 14px 0; border-bottom: 1px solid var(--border); }
+.danger-row:last-child { border-bottom: none; }
+.danger-title { font-size: 13px; font-weight: 600; color: var(--text); }
+.danger-sub { font-size: 11.5px; color: var(--muted); margin-top: 2px; }
+.danger-btn { padding: 7px 14px; border-radius: 8px; font-size: 12px; font-weight: 600; cursor: pointer; font-family: 'Plus Jakarta Sans', sans-serif; transition: all 0.15s; border: none; }
+.btn-export { background: #eff6ff; color: var(--accent); border: 1px solid #bfdbfe; }
+.btn-export:hover { background: #dbeafe; }
+.btn-delete { background: #fff1f2; color: #be123c; border: 1px solid #fecdd3; }
+.btn-delete:hover { background: #fee2e2; }
+.pw-strength { height: 3px; border-radius: 2px; background: var(--border); margin-top: 6px; overflow: hidden; }
+.pw-fill { height: 100%; border-radius: 2px; transition: width 0.3s, background 0.3s; width: 0%; }
+.modal-overlay { position: fixed; inset: 0; background: rgba(15, 23, 42, 0.5); display: none; align-items: center; justify-content: center; z-index: 100; backdrop-filter: blur(4px); }
+.modal-overlay.show { display: flex; }
+.modal-card { background: var(--card); border: 1px solid var(--border); border-radius: 16px; padding: 28px; max-width: 380px; width: 90%; box-shadow: 0 20px 60px rgba(15, 23, 42, 0.2); }
+.modal-title { font-size: 16px; font-weight: 800; color: var(--text); margin-bottom: 8px; }
+.modal-sub { font-size: 13px; color: var(--muted); margin-bottom: 18px; line-height: 1.5; }
+.modal-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 18px; }
+.btn-cancel { padding: 8px 16px; border-radius: 8px; border: 1px solid var(--border); background: var(--soft); font-size: 13px; font-weight: 600; cursor: pointer; font-family: 'Plus Jakarta Sans', sans-serif; color: var(--muted); }
+.btn-confirm-delete { padding: 8px 16px; border-radius: 8px; background: #ef4444; border: none; color: #fff; font-size: 13px; font-weight: 700; cursor: pointer; font-family: 'Plus Jakarta Sans', sans-serif; }
+@media (max-width: 900px) {
+  .settings-wrap { padding: 18px 14px 36px; }
+  .field-row { grid-template-columns: 1fr; }
+}
+</style>
+
+<div class="settings-wrap">
+  <div class="settings-header">
+    <div class="settings-title">Settings</div>
+    <div class="settings-sub">Manage your account, appearance, and preferences</div>
+  </div>
+
+  {% if messages %}
+  <div class="toast-list">
+    {% for message in messages %}
+    <div class="toast {% if message.tags == 'error' %}toast-error{% else %}toast-success{% endif %}">
+      {% if message.tags == 'error' %}!{% else %}OK{% endif %} {{ message }}
+    </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  <div class="settings-section">
+    <div class="section-head">
+      <div class="section-icon si-blue">U</div>
+      <div><div class="section-name">Account</div><div class="section-desc">Your personal details and contact info</div></div>
+    </div>
+    <div class="section-body">
+      <form method="post">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="update_account">
+        <div class="field-row">
+          <div><label class="field-label">First Name</label><input type="text" name="first_name" class="field-input" value="{{ user.first_name }}"></div>
+          <div><label class="field-label">Last Name</label><input type="text" name="last_name" class="field-input" value="{{ user.last_name }}"></div>
+        </div>
+        <div class="field-row">
+          <div><label class="field-label">Email</label><input type="email" name="email" class="field-input" value="{{ user.email }}"></div>
+          <div><label class="field-label">Phone</label><input type="tel" name="phone" class="field-input" value="{{ profile.phone }}"></div>
+        </div>
+        <div class="field-row full"><label class="field-label">Username</label><input type="text" class="field-input" value="{{ user.username }}" disabled style="opacity:.55;cursor:not-allowed"></div>
+        <button type="submit" class="save-btn">Save Account Details</button>
+      </form>
+    </div>
+  </div>
+
+  <div class="settings-section">
+    <div class="section-head">
+      <div class="section-icon si-purple">P</div>
+      <div><div class="section-name">Password</div><div class="section-desc">Keep your account secure</div></div>
+    </div>
+    <div class="section-body">
+      <form method="post">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="change_password">
+        <div class="field-row full"><label class="field-label">Current Password</label><input type="password" name="old_password" class="field-input"></div>
+        <div class="field-row">
+          <div>
+            <label class="field-label">New Password</label>
+            <input type="password" name="new_password1" id="newPw" class="field-input" oninput="checkStrength(this.value)">
+            <div class="pw-strength"><div class="pw-fill" id="pwFill"></div></div>
+          </div>
+          <div><label class="field-label">Confirm Password</label><input type="password" name="new_password2" class="field-input"></div>
+        </div>
+        <button type="submit" class="save-btn">Change Password</button>
+      </form>
+    </div>
+  </div>
+
+  <div class="settings-section">
+    <div class="section-head">
+      <div class="section-icon si-purple">A</div>
+      <div><div class="section-name">Appearance</div><div class="section-desc">Theme, font size, and language</div></div>
+    </div>
+    <div class="section-body">
+      <form method="post">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="update_appearance">
+        <input type="hidden" name="theme" id="themeInput" value="{{ profile.theme }}">
+        <input type="hidden" name="font_size" id="fontInput" value="{{ profile.font_size }}">
+        <div style="margin-bottom:18px"><div class="field-label">Theme</div><div class="option-pills"><div class="opt-pill {% if profile.theme == 'light' %}selected{% endif %}" onclick="selectOpt('themeInput','light',this)">Light</div><div class="opt-pill {% if profile.theme == 'dark' %}selected{% endif %}" onclick="selectOpt('themeInput','dark',this)">Dark</div></div></div>
+        <div style="margin-bottom:18px"><div class="field-label">Font Size</div><div class="option-pills"><div class="opt-pill {% if profile.font_size == 'normal' %}selected{% endif %}" onclick="selectOpt('fontInput','normal',this)">Normal</div><div class="opt-pill {% if profile.font_size == 'large' %}selected{% endif %}" onclick="selectOpt('fontInput','large',this)">Large</div><div class="opt-pill {% if profile.font_size == 'xlarge' %}selected{% endif %}" onclick="selectOpt('fontInput','xlarge',this)">Extra Large</div></div></div>
+        <div style="margin-bottom:18px">
+          <label class="field-label">Interface Language</label>
+          <select name="language" class="field-select" style="max-width:240px">
+            <option value="en" {% if profile.language == 'en' %}selected{% endif %}>English</option>
+            <option value="ta" {% if profile.language == 'ta' %}selected{% endif %}>Tamil</option>
+            <option value="hi" {% if profile.language == 'hi' %}selected{% endif %}>Hindi</option>
+            <option value="te" {% if profile.language == 'te' %}selected{% endif %}>Telugu</option>
+            <option value="ml" {% if profile.language == 'ml' %}selected{% endif %}>Malayalam</option>
+            <option value="kn" {% if profile.language == 'kn' %}selected{% endif %}>Kannada</option>
+            <option value="mr" {% if profile.language == 'mr' %}selected{% endif %}>Marathi</option>
+            <option value="bn" {% if profile.language == 'bn' %}selected{% endif %}>Bengali</option>
+          </select>
+        </div>
+        <button type="submit" class="save-btn">Save Appearance</button>
+      </form>
+    </div>
+  </div>
+
+  <div class="settings-section">
+    <div class="section-head">
+      <div class="section-icon si-green">C</div>
+      <div><div class="section-name">Chat Preferences</div><div class="section-desc">How the AI assistant behaves for you</div></div>
+    </div>
+    <div class="section-body">
+      <form method="post">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="update_chat">
+        <div style="margin-bottom:16px"><label class="field-label">AI Response Language</label><select name="chat_language" class="field-select" style="max-width:240px"><option value="en" {% if profile.chat_language == 'en' %}selected{% endif %}>English</option><option value="ta" {% if profile.chat_language == 'ta' %}selected{% endif %}>Tamil</option></select></div>
+        <div class="toggle-row"><div class="tr-icon" style="background:#f0fdf4">M</div><div class="tr-info"><div class="tr-title">Voice Input (Mic)</div><div class="tr-sub">Show mic button in chat input bar</div></div><button type="button" class="tog {% if not profile.mic_enabled %}off{% endif %}" onclick="togglePref(this,'mic_enabled')"></button><input type="checkbox" name="mic_enabled" id="micCheck" {% if profile.mic_enabled %}checked{% endif %} style="display:none"></div>
+        <div class="toggle-row"><div class="tr-icon" style="background:#eff6ff">Q</div><div class="tr-info"><div class="tr-title">Quick Chips</div><div class="tr-sub">Show shortcut chips above chat input</div></div><button type="button" class="tog {% if not profile.quick_chips_enabled %}off{% endif %}" onclick="togglePref(this,'quick_chips_enabled')"></button><input type="checkbox" name="quick_chips_enabled" id="chipsCheck" {% if profile.quick_chips_enabled %}checked{% endif %} style="display:none"></div>
+        <div style="margin-top:16px"><button type="submit" class="save-btn">Save Chat Preferences</button></div>
+      </form>
+    </div>
+  </div>
+
+  <div class="settings-section" id="notifications">
+    <div class="section-head">
+      <div class="section-icon si-amber">N</div>
+      <div><div class="section-name">Notifications</div><div class="section-desc">How you want to be notified</div></div>
+    </div>
+    <div class="section-body" style="padding-top:8px;padding-bottom:8px">
+      <div class="toggle-row"><div class="tr-icon" style="background:#f0fdf4">S</div><div class="tr-info"><div class="tr-title">SMS Alerts</div><div class="tr-sub">Complaint status updates via SMS</div></div><button class="tog {% if not profile.notif_sms %}off{% endif %}" onclick="ajaxToggle(this,'notif_sms')"></button></div>
+      <div class="toggle-row"><div class="tr-icon" style="background:#eff6ff">E</div><div class="tr-info"><div class="tr-title">Email Digest</div><div class="tr-sub">Weekly activity summary to your email</div></div><button class="tog {% if not profile.notif_email %}off{% endif %}" onclick="ajaxToggle(this,'notif_email')"></button></div>
+      <div class="toggle-row"><div class="tr-icon" style="background:#faf5ff">I</div><div class="tr-info"><div class="tr-title">In-App Notifications</div><div class="tr-sub">Bell alerts inside the app</div></div><button class="tog {% if not profile.notif_inapp %}off{% endif %}" onclick="ajaxToggle(this,'notif_inapp')"></button></div>
+      <div class="toggle-row"><div class="tr-icon" style="background:#fff1f2">X</div><div class="tr-info"><div class="tr-title">Escalation Alerts</div><div class="tr-sub">Notify when complaint is escalated to agent</div></div><button class="tog {% if not profile.notif_escalation %}off{% endif %}" onclick="ajaxToggle(this,'notif_escalation')"></button></div>
+    </div>
+  </div>
+
+  <div class="settings-section">
+    <div class="section-head">
+      <div class="section-icon si-red">D</div>
+      <div><div class="section-name">Privacy & Data</div><div class="section-desc">Your data and account control</div></div>
+    </div>
+    <div class="section-body" style="padding-top:8px;padding-bottom:8px">
+      <div class="danger-row"><div><div class="danger-title">Export My Data</div><div class="danger-sub">Download all your sessions and complaints as JSON</div></div><button class="danger-btn btn-export" onclick="exportData()">Export</button></div>
+      <div class="danger-row"><div><div class="danger-title">Delete Account</div><div class="danger-sub">Permanently delete your account and all data</div></div><button class="danger-btn btn-delete" onclick="document.getElementById('deleteModal').classList.add('show')">Delete Account</button></div>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="deleteModal">
+  <div class="modal-card">
+    <div class="modal-title">Delete Account</div>
+    <div class="modal-sub">This action is permanent. Enter your password to confirm.</div>
+    <div><label class="field-label">Password</label><input type="password" id="deletePassword" class="field-input" placeholder="Enter your password"></div>
+    <div class="modal-actions"><button class="btn-cancel" onclick="document.getElementById('deleteModal').classList.remove('show')">Cancel</button><button class="btn-confirm-delete" onclick="confirmDelete()">Delete</button></div>
+  </div>
+</div>
+
+<script>
+const CSRF = document.cookie.match(/csrftoken=([^;]+)/)?.[1] || '';
+function selectOpt(inputId, value, el) {
+  document.getElementById(inputId).value = value;
+  el.closest('.option-pills').querySelectorAll('.opt-pill').forEach((p) => p.classList.remove('selected'));
+  el.classList.add('selected');
+}
+function togglePref(btn, field) {
+  btn.classList.toggle('off');
+  const isOn = !btn.classList.contains('off');
+  const checkId = field === 'mic_enabled' ? 'micCheck' : 'chipsCheck';
+  const check = document.getElementById(checkId);
+  if (check) check.checked = isOn;
+}
+async function ajaxToggle(btn, field) {
+  btn.classList.toggle('off');
+  const value = !btn.classList.contains('off');
+  try {
+    const response = await fetch('{% url "civic-settings-toggle" %}', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-CSRFToken': CSRF },
+      body: JSON.stringify({ field, value }),
+      credentials: 'same-origin',
+    });
+    if (!response.ok) throw new Error('failed');
+  } catch (e) {
+    btn.classList.toggle('off');
+  }
+}
+async function exportData() {
+  const res = await fetch('{% url "civic-export-data" %}', { method: 'POST', headers: { 'X-CSRFToken': CSRF }, credentials: 'same-origin' });
+  if (!res.ok) return;
+  const blob = await res.blob();
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'my_civic_data.json';
+  a.click();
+  URL.revokeObjectURL(url);
+}
+async function confirmDelete() {
+  const password = document.getElementById('deletePassword').value;
+  if (!password) return;
+  const res = await fetch('{% url "civic-delete-account" %}', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'X-CSRFToken': CSRF },
+    body: JSON.stringify({ password }),
+    credentials: 'same-origin',
+  });
+  const data = await res.json();
+  if (data.status === 'ok') window.location.href = data.redirect;
+}
+function checkStrength(pw) {
+  const fill = document.getElementById('pwFill');
+  if (!fill) return;
+  let score = 0;
+  if (pw.length >= 8) score += 1;
+  if (/[A-Z]/.test(pw)) score += 1;
+  if (/[0-9]/.test(pw)) score += 1;
+  if (/[^A-Za-z0-9]/.test(pw)) score += 1;
+  const pct = [0, 25, 50, 75, 100][score];
+  const color = ['', '#ef4444', '#f59e0b', '#f59e0b', '#10b981'][score];
+  fill.style.width = pct + '%';
+  fill.style.background = color;
+}
+</script>
+{% endblock %}

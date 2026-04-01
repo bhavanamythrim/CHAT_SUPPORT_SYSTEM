@@ -1,0 +1,708 @@
+﻿{% extends "base.html" %}
+{% block title %}Smart Civic Chat{% endblock %}
+{% block topbar_title %}Civic Assistant{% endblock %}
+{% block content %}
+<section class="chat-layout fade-in">
+  <div class="chat-main card">
+    <header class="chat-topbar">
+      <div class="chat-topbar-left">
+        <div id="connectionStatus" class="status-pill"><span class="status-dot"></span> Online</div>
+        <h2>Civic Assistant</h2>
+      </div>
+      <div class="chat-topbar-actions"></div>
+    </header>
+
+    <div class="chips-bar">
+      <span class="chips-label">Quick</span>
+      <div class="chips-scroll" id="quick-chips">
+        <div class="chip chip-b" onclick="sendChip(this)">Pay EB Bill</div>
+        <div class="chip chip-g" onclick="sendChip(this)">Post Office Nearby</div>
+        <div class="chip chip-r" onclick="sendChip(this)">Report Pothole</div>
+        <div class="chip chip-a" onclick="sendChip(this)">Birth Certificate</div>
+        <div class="chip chip-p" onclick="sendChip(this)">Health Camp Info</div>
+        <div class="chip chip-b" onclick="sendChip(this)">Aadhaar Update</div>
+      </div>
+    </div>
+
+    <div id="chat-box" class="chat-window modern">
+      {% for msg in chat_messages %}
+        {% if msg.sender_role == 'agent' or msg.sender_role == 'admin' %}
+          <article class="bubble-row agent-row">
+            <div class="avatar agent-av">A</div>
+            <div class="bubble agent-bubble">
+              <div class="meta">{{ msg.sender_role }}</div>
+              <div class="msg-body">{{ msg.content }}</div>
+            </div>
+          </article>
+        {% elif msg.sender and msg.sender_id == request.user.id %}
+          <article class="bubble-row self">
+            <div class="avatar">{{ request.user.username|first|upper }}</div>
+            <div class="bubble user">
+              <div class="meta">{{ msg.sender_role }}</div>
+              <div class="msg-body">{{ msg.content }}</div>
+            </div>
+          </article>
+        {% else %}
+          <article class="bubble-row">
+            <div class="avatar">AI</div>
+            <div class="bubble bot">
+              <div class="meta">{{ msg.sender_role }}</div>
+              <div class="msg-body">{{ msg.content }}</div>
+              <div class="msg-actions">
+                <button type="button" class="mact-btn thumbs-up-btn" title="Helpful">+</button>
+                <button type="button" class="mact-btn thumbs-down-btn" title="Not helpful">-</button>
+                <span class="mact-sep">|</span>
+                <span class="copy-lbl">copy</span>
+              </div>
+            </div>
+          </article>
+        {% endif %}
+      {% empty %}
+        <div class="empty-msg">Start chatting for support.</div>
+      {% endfor %}
+
+      <div id="typing-indicator" class="typing" hidden>
+        <span></span><span></span><span></span>
+      </div>
+    </div>
+
+    <form id="chat-form" class="input-area">
+      {% csrf_token %}
+      <div id="file-preview" class="file-strip"></div>
+      <div class="ibox">
+        <textarea id="messageInput" rows="1" maxlength="500" placeholder="Ask about any civic service, complaint, or nearby office..." required></textarea>
+        <div class="iacts">
+          <button id="attach-btn" class="ibtn" type="button" aria-label="Attach file">&#128206;</button>
+          <button id="voice-btn" class="ibtn" type="button" aria-label="Voice input">&#127908;</button>
+          <button id="locationBtn" class="ibtn" type="button" aria-label="Use location">&#128205;</button>
+          <button class="send-btn" type="submit" title="Send">&#10148;</button>
+        </div>
+      </div>
+      <input id="file-input" type="file" hidden>
+      <div class="input-meta">
+        <span id="char-count" class="char-count">0/500</span>
+        <span>Enter to send, Shift+Enter for new line</span>
+      </div>
+      <input id="userLocation" type="hidden" value="">
+    </form>
+  </div>
+
+  <aside class="chat-side card">
+    <section class="side-block">
+      <h3>AI Summary</h3>
+      <div class="summary-grid">
+        <div class="summary-row">
+          <span class="summary-label">Topic</span>
+          <strong id="summary-topic">--</strong>
+        </div>
+        <div class="summary-tags">
+          <span id="summary-dept" class="summary-tag dept">Department</span>
+          <span id="summary-urgency" class="summary-tag urgency">Urgency</span>
+          <span id="summary-type" class="summary-tag type">Type</span>
+        </div>
+      </div>
+    </section>
+
+    <section class="side-block">
+      <h3>Nearby Offices</h3>
+      <div id="nearbyOfficesPanel" class="mini-office-list">
+        <div class="near-empty">Click location pin to detect your location</div>
+      </div>
+    </section>
+
+    <section class="side-block warn">
+      <h3>Escalation</h3>
+      <p>Need human help for unresolved issues.</p>
+      <button id="escalate-btn" type="button" class="btn-secondary">Escalate Complaint</button>
+    </section>
+  </aside>
+</section>
+
+<script>
+(function () {
+  window.sendChip = function sendChip(el) {
+    const inputEl = document.getElementById("messageInput");
+    if (!inputEl || !el) return;
+    inputEl.value = (el.textContent || "").trim();
+    inputEl.dispatchEvent(new Event("input"));
+    inputEl.focus();
+    document.getElementById("chat-form").requestSubmit();
+  };
+
+  const sessionId = {{ session.id }};
+  const currentUsername = "{{ request.user.username|escapejs }}";
+  const isSupportUser = {{ request.user.is_staff|yesno:"true,false" }} || "{{ request.user.role|default:''|escapejs }}" === "ADMIN";
+
+  const box = document.getElementById("chat-box");
+  const form = document.getElementById("chat-form");
+  const input = document.getElementById("messageInput");
+  const charCount = document.getElementById("char-count");
+  const fileInput = document.getElementById("file-input");
+  const attachBtn = document.getElementById("attach-btn");
+  const filePreview = document.getElementById("file-preview");
+  const voiceBtn = document.getElementById("voice-btn");
+  const locationBtn = document.getElementById("locationBtn");
+  const locationInput = document.getElementById("userLocation");
+  const status = document.getElementById("connectionStatus");
+  const typing = document.getElementById("typing-indicator");
+  const nearbyPanel = document.getElementById("nearbyOfficesPanel");
+  const csrfInput = form.querySelector("input[name='csrfmiddlewaretoken']");
+  const sendBtn = form.querySelector(".send-btn");
+  const scheme = window.location.protocol === "https:" ? "wss" : "ws";
+  const socket = new WebSocket(`${scheme}://${window.location.host}/ws/civic/chat/${sessionId}/`);
+  const files = [];
+
+  function getCookie(name) {
+    let value = null;
+    if (document.cookie && document.cookie !== "") {
+      const cookies = document.cookie.split(";");
+      for (let i = 0; i < cookies.length; i += 1) {
+        const c = cookies[i].trim();
+        if (c.substring(0, name.length + 1) === `${name}=`) {
+          value = decodeURIComponent(c.substring(name.length + 1));
+          break;
+        }
+      }
+    }
+    return value;
+  }
+
+  function toHtml(text) {
+    const escaped = (text || "")
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;");
+    return escaped
+      .replace(/(https?:\/\/[^\s]+)/g, '<a href="$1" target="_blank" rel="noopener noreferrer">$1</a>')
+      .replace(/\n/g, "<br>");
+  }
+
+  function formatBotResponse(text) {
+    if (!text) return "";
+    const safe = toHtml(text);
+    return safe
+      .replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>")
+      .replace(/^(\d+)\.\s(.+)$/gm, '<div class="resp-step"><span class="step-num">$1</span><span>$2</span></div>')
+      .replace(/^[-•]\s(.+)$/gm, '<div class="resp-bullet">• $1</div>');
+  }
+
+  function renderTyping(show) {
+    typing.hidden = !show;
+    if (show) box.scrollTop = box.scrollHeight;
+  }
+
+  function makeBubble(role, text, type, withActions) {
+    const row = document.createElement("article");
+    row.className = `bubble-row ${type === "self" ? "self" : ""} ${type === "agent" ? "agent-row" : ""}`.trim();
+
+    const avatar = document.createElement("div");
+    avatar.className = `avatar ${type === "agent" ? "agent-av" : ""}`.trim();
+    avatar.textContent = type === "self" ? (currentUsername[0] || "U").toUpperCase() : (type === "agent" ? "A" : "AI");
+
+    const bubble = document.createElement("div");
+    bubble.className = `bubble ${type === "self" ? "user" : type === "agent" ? "agent-bubble" : "bot"}`;
+
+    const meta = document.createElement("div");
+    meta.className = "meta";
+    meta.textContent = role || "assistant";
+
+    const body = document.createElement("div");
+    body.className = "msg-body";
+    if (type === "self") {
+      body.textContent = text || "";
+    } else if (type === "bot") {
+      body.innerHTML = formatBotResponse(text || "");
+    } else {
+      body.innerHTML = toHtml(text || "");
+    }
+
+    bubble.appendChild(meta);
+    bubble.appendChild(body);
+
+    if (withActions) {
+      const feedback = document.createElement("div");
+      feedback.className = "msg-actions";
+      feedback.innerHTML = "<button class='mact-btn thumbs-up-btn' title='Helpful'>+</button><button class='mact-btn thumbs-down-btn' title='Not helpful'>-</button><span class='mact-sep'>|</span><span class='copy-lbl'>copy</span>";
+      bubble.appendChild(feedback);
+    }
+
+    row.appendChild(avatar);
+    row.appendChild(bubble);
+    box.appendChild(row);
+    box.scrollTop = box.scrollHeight;
+  }
+
+  function addSystemMessage(text, level) {
+    const row = document.createElement("div");
+    row.className = "system-msg";
+    row.innerHTML = `<div class="system-bubble ${level || "info"}">${toHtml(text)}</div>`;
+    box.appendChild(row);
+    box.scrollTop = box.scrollHeight;
+  }
+
+  function addUserMessage(role, text, senderUsername) {
+    const isSelf = (senderUsername || "") === currentUsername;
+    makeBubble(role || "citizen", text, isSelf ? "self" : "bot", false);
+  }
+
+  function addAssistantMessage(role, text) {
+    makeBubble(role || "assistant", text, "bot", true);
+  }
+
+  function addAgentMessage(text, senderUsername) {
+    const role = `agent${senderUsername ? ` · ${senderUsername}` : ""}`;
+    makeBubble(role, text, "agent", false);
+  }
+
+  function parseOfficeReply(text) {
+    const lines = (text || "").split("\n").map((line) => line.trim()).filter(Boolean);
+    if (!lines.length) return null;
+    const title = lines[0];
+    if (!title.toLowerCase().includes("offices")) return null;
+
+    const rows = [];
+    lines.forEach((line) => {
+      if (!line.startsWith("- ")) return;
+      const mapMatch = line.match(/\|\s*Map:\s*(https?:\/\/\S+)/i);
+      const timingsMatch = line.match(/\|\s*Timings:\s*([^|]+)/i);
+      const phoneMatch = line.match(/\|\s*Phone:\s*([^|]+)/i);
+      const place = line.replace(/^- /, "").split("|")[0].trim();
+      const [name, city] = place.split(",").map((v) => (v || "").trim());
+      rows.push({
+        name: name || place,
+        city: city || "",
+        timings: timingsMatch ? timingsMatch[1].trim() : "Unknown",
+        phone: phoneMatch ? phoneMatch[1].trim() : "",
+        mapLink: mapMatch ? mapMatch[1].trim() : "",
+      });
+    });
+    if (!rows.length) return null;
+
+    const wrap = document.createElement("div");
+    wrap.className = "office-result-card";
+    const listHtml = rows.map((r) => {
+      const statusClass = r.timings && r.timings.toLowerCase() !== "unknown" ? "open" : "closed";
+      return `
+        <li class="office-item">
+          <div class="office-main">
+            <strong>${r.name}</strong>
+            <span>${r.city}</span>
+            <small>${r.timings}</small>
+          </div>
+          <span class="office-status ${statusClass}">${statusClass === "open" ? "Open" : "Unknown"}</span>
+          ${r.mapLink ? `<a class="office-map-btn" href="${r.mapLink}" target="_blank" rel="noopener noreferrer">Map</a>` : ""}
+        </li>`;
+    }).join("");
+
+    wrap.innerHTML = `<div class="office-result-head"><span>Nearby Offices</span></div><ul class="office-result-list">${listHtml}</ul>`;
+    return wrap;
+  }
+
+  function parseComplaintStatus(text) {
+    if (!text || !text.includes("Complaint Status:")) return null;
+    const idMatch = text.match(/ID:\s*([A-Z0-9-]+)/i);
+    const statusMatch = text.match(/Status:\s*([a-z_]+)/i);
+    const currentMatch = text.match(/Current Step:\s*([A-Za-z]+)/i);
+
+    const complaintId = idMatch ? idMatch[1] : "--";
+    const currentStep = (currentMatch ? currentMatch[1] : "Filed").toLowerCase();
+    const steps = ["filed", "assigned", "review", "work", "closed"];
+    const activeIndex = Math.max(0, steps.indexOf(currentStep));
+
+    const wrap = document.createElement("div");
+    wrap.className = "complaint-stepper-card";
+    wrap.innerHTML = `
+      <div class="complaint-head">
+        <strong>#${complaintId}</strong>
+        <span class="session-badge status-${(statusMatch ? statusMatch[1] : "open").toLowerCase()}">${statusMatch ? statusMatch[1] : "open"}</span>
+      </div>
+      <ol class="stepper-list">
+        ${steps.map((step, idx) => {
+          let cls = "pending";
+          if (idx < activeIndex) cls = "done";
+          if (idx === activeIndex) cls = "active";
+          return `<li class="step ${cls}"><span class="dot">${idx < activeIndex ? "&#10003;" : idx + 1}</span><small>${step}</small></li>`;
+        }).join("")}
+      </ol>`;
+    return wrap;
+  }
+
+  function addAssistantRich(text) {
+    const row = document.createElement("article");
+    row.className = "bubble-row";
+    row.innerHTML = `<div class="avatar">AI</div><div class="bubble bot"><div class="meta">assistant</div><div class="msg-body"></div><div class="msg-actions"><button class='mact-btn thumbs-up-btn' title='Helpful'>+</button><button class='mact-btn thumbs-down-btn' title='Not helpful'>-</button><span class='mact-sep'>|</span><span class='copy-lbl'>copy</span></div></div>`;
+    const body = row.querySelector(".msg-body");
+
+    const officeCard = parseOfficeReply(text || "");
+    const complaintCard = parseComplaintStatus(text || "");
+    if (officeCard) {
+      body.appendChild(officeCard);
+    } else if (complaintCard) {
+      body.appendChild(complaintCard);
+    } else {
+      body.innerHTML = formatBotResponse(text);
+    }
+
+    box.appendChild(row);
+    box.scrollTop = box.scrollHeight;
+  }
+
+  function updateSummary() {
+    const payload = new URLSearchParams();
+    payload.append("session_id", String(sessionId));
+
+    fetch("/api/civic/session/summary/", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/x-www-form-urlencoded",
+        "X-CSRFToken": getCookie("csrftoken") || (csrfInput ? csrfInput.value : ""),
+      },
+      body: payload.toString(),
+      credentials: "same-origin",
+    })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data) => {
+        if (!data) return;
+        const topicEl = document.getElementById("summary-topic");
+        const deptEl = document.getElementById("summary-dept");
+        const urgencyEl = document.getElementById("summary-urgency");
+        const typeEl = document.getElementById("summary-type");
+
+        topicEl.textContent = data.topic || "--";
+        deptEl.textContent = data.department || "Department";
+        urgencyEl.textContent = data.urgency || "Urgency";
+        typeEl.textContent = data.query_type || "Type";
+
+        urgencyEl.classList.remove("is-high", "is-normal");
+        urgencyEl.classList.add((data.urgency || "").toLowerCase() === "high" ? "is-high" : "is-normal");
+      });
+  }
+
+  function updateRightPanelOffices(offices) {
+    if (!nearbyPanel) return;
+    if (!offices || !offices.length) {
+      nearbyPanel.innerHTML = "<div class='near-empty'>No nearby office loaded yet.</div>";
+      return;
+    }
+    nearbyPanel.innerHTML = offices.slice(0, 3).map((o) => `
+      <div class="near-item">
+        <div class="near-ic">OF</div>
+        <div class="near-info">
+          <div class="near-name">${o.name || "Office"}</div>
+          <div class="near-dist">${o.distance_label || "-"} · ${o.is_open ? "Open" : "Closed"}</div>
+        </div>
+        <a href="${o.maps_url || o.map_link || "#"}" target="_blank" rel="noopener noreferrer" class="near-map">Map</a>
+      </div>
+    `).join("");
+  }
+
+  function renderOfficeCard(offices) {
+    if (!offices || !offices.length) return;
+    const row = document.createElement("article");
+    row.className = "bubble-row";
+    row.innerHTML = `
+      <div class="avatar">AI</div>
+      <div class="bubble bot">
+        <div class="meta">assistant</div>
+        <div class="msg-body">
+          <div class="bubble-intro">Found <strong>${offices.length}</strong> offices near your location:</div>
+          <div class="office-card">
+            <div class="oc-header"><span>Nearby Offices</span></div>
+            <div class="oc-list">
+              ${offices.map((o) => `
+                <div class="oc-item">
+                  <div class="oc-icon">OF</div>
+                  <div class="oc-info">
+                    <div class="oc-name">${o.name || "Office"}</div>
+                    <div class="oc-detail">${o.distance_label || "-"}${o.city ? ` - ${o.city}` : ""} - ${o.opening_hours || o.timings || "Hours unavailable"}</div>
+                  </div>
+                  <div class="oc-actions">
+                    <span class="open-badge ${o.is_open ? "badge-open" : "badge-closed"}">${o.is_open ? "Open" : "Closed"}</span>
+                    <a href="${o.maps_url || o.map_link || "#"}" target="_blank" rel="noopener noreferrer" class="map-btn">Map</a>
+                  </div>
+                </div>`).join("")}
+            </div>
+          </div>
+        </div>
+      </div>`;
+    box.appendChild(row);
+    box.scrollTop = box.scrollHeight;
+  }
+
+  function showLocationError(message) {
+    addAssistantMessage("assistant", `Location: ${message}`);
+  }
+
+  function updateNearby() {
+    const match = (locationInput.value || "").match(/(-?\d+\.\d+)\s*,\s*(-?\d+\.\d+)/);
+    if (!match) return Promise.resolve([]);
+    const lat = match[1];
+    const lng = match[2];
+
+    return fetch(`/api/civic/offices/nearby/?lat=${encodeURIComponent(lat)}&lng=${encodeURIComponent(lng)}&service_id={{ session.service_id|default:'0' }}&limit=5`, {
+      credentials: "same-origin",
+    })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data) => {
+        if (!data) return [];
+        const results = data.results || data;
+        updateRightPanelOffices(results);
+        return results;
+      });
+  }
+
+  function getLocation() {
+    if (!locationBtn) return;
+    locationBtn.textContent = "...";
+    locationBtn.disabled = true;
+
+    if (!("geolocation" in navigator)) {
+      locationBtn.textContent = "\u{1F4CD}";
+      locationBtn.disabled = false;
+      showLocationError("Geolocation not supported by your browser.");
+      return;
+    }
+
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        const lat = pos.coords.latitude.toFixed(6);
+        const lon = pos.coords.longitude.toFixed(6);
+        locationInput.value = `${lat},${lon}`;
+        locationBtn.textContent = "\u{1F4CD}";
+        locationBtn.style.color = "#10b981";
+        locationBtn.title = `Location set (+/-${Math.round(pos.coords.accuracy || 0)}m)`;
+        locationBtn.disabled = false;
+
+        addAssistantMessage("assistant", "Detecting your location and finding nearby offices...");
+        updateNearby()
+          .then((offices) => {
+            if (!offices || !offices.length) {
+              addAssistantMessage("assistant", "No offices found near your location. Try a different area.");
+              return;
+            }
+            renderOfficeCard(offices);
+          })
+          .catch(() => {
+            addAssistantMessage("assistant", "Could not load nearby offices. Please check your connection.");
+          });
+      },
+      (err) => {
+        locationBtn.textContent = "\u{1F4CD}";
+        locationBtn.disabled = false;
+        if (err && err.code === 1) showLocationError("Location permission denied. Please allow location access.");
+        else if (err && err.code === 3) showLocationError("Location request timed out. Please try again.");
+        else showLocationError("Location unavailable. Please try again.");
+      },
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 300000 }
+    );
+  }
+
+  async function sendViaHttp(content) {
+    const payload = new URLSearchParams();
+    payload.append("session_id", String(sessionId));
+    payload.append("content", content);
+
+    const resp = await fetch("{% url 'civic-chat-send' %}", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/x-www-form-urlencoded",
+        "X-CSRFToken": getCookie("csrftoken") || (csrfInput ? csrfInput.value : ""),
+      },
+      body: payload.toString(),
+      credentials: "same-origin",
+    });
+
+    if (!resp.ok) {
+      addAssistantMessage("assistant", "Unable to process message right now.");
+      return;
+    }
+
+    const data = await resp.json();
+    if (data.user_message) addUserMessage(data.user_message.sender_role, data.user_message.content, currentUsername);
+    if (data.ai_message) {
+      addAssistantRich(data.ai_message.content);
+      updateSummary();
+      updateNearby();
+    }
+  }
+
+  function handleSocketPayload(data) {
+    if (data.system) {
+      const msg = data.message || "";
+      const lower = msg.toLowerCase();
+      const level = lower.includes("resolved") ? "resolve" : (lower.includes("joined") ? "join" : "info");
+      addSystemMessage(msg, level);
+      return;
+    }
+
+    if (data.sender_role && data.message) {
+      const role = String(data.sender_role).toLowerCase();
+      if (role === "agent" || role === "admin") {
+        addAgentMessage(data.message, data.sender_username || data.sender || "agent");
+      } else {
+        addUserMessage(role, data.message, data.sender_username || data.sender || "");
+      }
+      return;
+    }
+
+    if (data.user_message) {
+      addUserMessage(
+        data.user_message.sender_role,
+        data.user_message.content,
+        data.user_message.sender_username || ""
+      );
+    }
+
+    if (data.ai_message) {
+      addAssistantRich(data.ai_message.content);
+      updateSummary();
+      updateNearby();
+    }
+  }
+
+  async function submitMessage(content) {
+    const trimmed = (content || "").trim();
+    if (!trimmed) return;
+
+    renderTyping(true);
+    if (sendBtn) sendBtn.disabled = true;
+
+    try {
+      if (socket.readyState === WebSocket.OPEN) {
+        socket.send(JSON.stringify({
+          message: trimmed,
+          role: isSupportUser ? "Agent" : "Citizen",
+        }));
+      } else {
+        await sendViaHttp(trimmed);
+      }
+    } finally {
+      renderTyping(false);
+      if (sendBtn) sendBtn.disabled = false;
+    }
+  }
+
+  socket.onopen = () => {
+    status.innerHTML = "<span class='status-dot'></span> Online";
+    status.classList.add("is-online");
+    status.classList.remove("is-offline");
+  };
+
+  socket.onclose = () => {
+    status.textContent = "Offline";
+    status.classList.remove("is-online");
+    status.classList.add("is-offline");
+  };
+
+  socket.onerror = () => {
+    status.textContent = "Offline";
+    status.classList.remove("is-online");
+    status.classList.add("is-offline");
+  };
+
+  socket.onmessage = (ev) => {
+    try {
+      const data = JSON.parse(ev.data);
+      handleSocketPayload(data);
+    } catch (e) {
+      addAssistantMessage("assistant", "Received an invalid realtime message.");
+    }
+  };
+
+  form.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const content = input.value;
+    input.value = "";
+    charCount.textContent = "0/500";
+    input.style.height = "auto";
+    await submitMessage(content);
+  });
+
+  input.addEventListener("input", () => {
+    charCount.textContent = `${input.value.length}/500`;
+    input.style.height = "auto";
+    input.style.height = `${Math.min(input.scrollHeight, 140)}px`;
+  });
+
+  input.addEventListener("keydown", (e) => {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      form.requestSubmit();
+    }
+  });
+
+  attachBtn.addEventListener("click", () => fileInput.click());
+  fileInput.addEventListener("change", () => {
+    if (!fileInput.files || !fileInput.files.length) return;
+    Array.from(fileInput.files).forEach((f) => files.push(f.name));
+    filePreview.innerHTML = files.map((name, idx) => `<span class='file-pill'>${name}<button type='button' data-idx='${idx}'>x</button></span>`).join("");
+    fileInput.value = "";
+  });
+
+  filePreview.addEventListener("click", (e) => {
+    const idx = e.target.dataset.idx;
+    if (idx === undefined) return;
+    files.splice(Number(idx), 1);
+    filePreview.innerHTML = files.map((name, i) => `<span class='file-pill'>${name}<button type='button' data-idx='${i}'>x</button></span>`).join("");
+  });
+
+  if (locationBtn) locationBtn.addEventListener("click", getLocation);
+
+  if ("webkitSpeechRecognition" in window) {
+    const recognition = new window.webkitSpeechRecognition();
+    recognition.lang = "en-IN";
+    recognition.interimResults = false;
+    voiceBtn.addEventListener("click", () => {
+      voiceBtn.classList.add("mic-on");
+      recognition.start();
+    });
+    recognition.onresult = (event) => {
+      input.value = event.results[0][0].transcript;
+      input.focus();
+      charCount.textContent = `${input.value.length}/500`;
+      voiceBtn.classList.remove("mic-on");
+    };
+    recognition.onerror = () => voiceBtn.classList.remove("mic-on");
+    recognition.onend = () => voiceBtn.classList.remove("mic-on");
+  } else {
+    voiceBtn.addEventListener("click", () => {
+      addAssistantMessage("assistant", "Voice input is not available in this browser.");
+    });
+  }
+
+  document.getElementById("escalate-btn").addEventListener("click", () => {
+    input.value = "Connect me to a human agent";
+    form.requestSubmit();
+  });
+
+  box.addEventListener("click", (e) => {
+    const actions = e.target.closest(".msg-actions");
+    if (!actions) return;
+
+    if (e.target.classList.contains("thumbs-up-btn")) {
+      e.target.classList.toggle("active-up");
+      const down = actions.querySelector(".thumbs-down-btn");
+      if (down) down.classList.remove("active-down");
+      return;
+    }
+
+    if (e.target.classList.contains("thumbs-down-btn")) {
+      e.target.classList.toggle("active-down");
+      const up = actions.querySelector(".thumbs-up-btn");
+      if (up) up.classList.remove("active-up");
+      return;
+    }
+
+    if (e.target.classList.contains("copy-lbl")) {
+      const bubbleEl = e.target.closest(".bubble");
+      const msgBody = bubbleEl ? bubbleEl.querySelector(".msg-body") : null;
+      navigator.clipboard.writeText(msgBody ? msgBody.innerText.trim() : "");
+      e.target.textContent = "copied!";
+      setTimeout(() => { e.target.textContent = "copy"; }, 1500);
+    }
+  });
+
+  updateSummary();
+})();
+</script>
+{% endblock %}

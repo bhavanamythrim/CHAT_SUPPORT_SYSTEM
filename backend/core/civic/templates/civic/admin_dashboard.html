@@ -1,0 +1,55 @@
+﻿{% extends "base.html" %}
+{% block title %}Admin Dashboard{% endblock %}
+{% block content %}
+<section class="fade-in">
+  <div class="page-hero">
+    <div>
+      <h1 class="page-title">Admin Analytics Dashboard</h1>
+      <p class="page-subtitle">Monitor usage, complaints, and escalation load.</p>
+    </div>
+  </div>
+
+  <div class="stats-grid">
+    <div class="metric card"><div class="card-body"><h3>Users</h3><p>{{ total_users }}</p></div></div>
+    <div class="metric card"><div class="card-body"><h3>Sessions</h3><p>{{ total_sessions }}</p></div></div>
+    <div class="metric card"><div class="card-body"><h3>Open Complaints</h3><p>{{ open_complaints }}</p></div></div>
+    <div class="metric card"><div class="card-body"><h3>Today Queries</h3><p>{{ today_queries }}</p></div></div>
+  </div>
+
+  <div class="card" style="margin-top: 12px;"><div class="card-body">
+    <h2>Admin Management</h2>
+    <p class="ticket-meta">Quick links for service setup and knowledge entry maintenance.</p>
+    <ul class="simple-list">
+      <li>
+        Services ({{ services_count }}) -
+        <a href="/admin/civic/service/" target="_blank" rel="noopener">Edit Services</a> |
+        <a href="/admin/civic/service/add/" target="_blank" rel="noopener">Add Service</a>
+      </li>
+      <li>
+        Knowledge Entries ({{ knowledge_count }}) -
+        <a href="/admin/civic/knowledgebase/" target="_blank" rel="noopener">Edit Knowledge Entries</a> |
+        <a href="/admin/civic/knowledgebase/add/" target="_blank" rel="noopener">Add Knowledge Entry</a>
+      </li>
+      <li>
+        Offices ({{ offices_count }}) -
+        <a href="/admin/civic/office/" target="_blank" rel="noopener">Edit Office Data</a> |
+        <a href="/admin/civic/office/add/" target="_blank" rel="noopener">Add Office</a>
+      </li>
+      <li>
+        Documents ({{ documents_count }}) -
+        <a href="/admin/civic/documentsrequired/" target="_blank" rel="noopener">Edit Document Lists</a> |
+        <a href="/admin/civic/documentsrequired/add/" target="_blank" rel="noopener">Add Document Entry</a>
+      </li>
+    </ul>
+  </div></div>
+
+  <div class="card" style="margin-top: 12px;"><div class="card-body">
+    <h2>Service Usage</h2>
+    <ul class="simple-list">
+      {% for s in usage_stats %}
+      <li>{{ s.date }} - {{ s.service.name }}: {{ s.total_queries }} queries / {{ s.escalated_queries }} escalated / {{ s.complaints_raised }} complaints</li>
+      {% empty %}<li>No usage data.</li>{% endfor %}
+    </ul>
+  </div></div>
+</section>
+{% endblock %}

@@ -1,0 +1,43 @@
+﻿{% extends "base.html" %}
+
+{% block title %}Create Ticket | CHAT4U{% endblock %}
+
+{% block content %}
+<section class="fade-in" style="max-width: 760px; margin: 0 auto;">
+    <div class="page-hero">
+        <div>
+            <h1 class="page-title">Create Ticket</h1>
+            <p class="page-subtitle">Share issue details so support can assist quickly.</p>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-body">
+            <form method="POST" class="form-grid">
+                {% csrf_token %}
+                <div>
+                    <label for="department">Department</label>
+                    <select id="department" name="department" required>
+                        <option value="post_office">Post Office</option>
+                        <option value="water_board">Water Board</option>
+                        <option value="electricity_board">Electricity Board</option>
+                        <option value="municipality">Municipality</option>
+                        <option value="general" selected>General Help Desk</option>
+                    </select>
+                </div>
+                <div>
+                    <label for="title">Ticket Title</label>
+                    <input id="title" type="text" name="title" placeholder="Example: Payment not reflected" required>
+                </div>
+                <div>
+                    <label for="description">Issue Description</label>
+                    <textarea id="description" name="description" placeholder="Describe the issue, when it started, and what you have tried." required></textarea>
+                </div>
+                <button class="btn btn-primary" type="submit">Submit Ticket</button>
+            </form>
+
+            <p class="meta-link"><a href="{% url 'ticket-list-view' %}">Back to ticket list</a></p>
+        </div>
+    </div>
+</section>
+{% endblock %}

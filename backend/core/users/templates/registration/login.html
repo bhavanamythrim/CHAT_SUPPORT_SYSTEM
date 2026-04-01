@@ -1,0 +1,561 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>UdhaviBot - Login</title>
+{% load static %}
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg:      #f0f4f8;
+  --card:    #ffffff;
+  --border:  #e2e8f0;
+  --accent:  #2563eb;
+  --accent2: #0ea5e9;
+  --text:    #0f172a;
+  --muted:   #64748b;
+  --soft:    #f8fafc;
+}
+
+body {
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  background: var(--bg);
+  font-size: 13px;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  overflow: hidden;
+}
+
+body::before,
+body::after {
+  content: "";
+  position: fixed;
+  pointer-events: none;
+  z-index: 0;
+}
+
+body::before {
+  inset: 0;
+  background:
+    radial-gradient(900px 560px at 12% 18%, rgba(37, 99, 235, 0.16), transparent 62%),
+    radial-gradient(840px 520px at 86% 82%, rgba(14, 165, 233, 0.18), transparent 60%),
+    linear-gradient(155deg, #f6f9fd 0%, #edf3fa 50%, #e8eff7 100%);
+  animation: bgFloat 14s ease-in-out infinite alternate;
+}
+
+body::after {
+  inset: 0;
+  background:
+    linear-gradient(rgba(37, 99, 235, 0.05) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(37, 99, 235, 0.05) 1px, transparent 1px);
+  background-size: 32px 32px, 32px 32px;
+  mask-image: radial-gradient(circle at center, black 28%, transparent 90%);
+  opacity: 0.55;
+}
+
+@keyframes bgFloat {
+  0% { transform: translate3d(0, 0, 0) scale(1); }
+  100% { transform: translate3d(-10px, 8px, 0) scale(1.03); }
+}
+
+.topbar {
+  height: 56px;
+  background: var(--card);
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 28px;
+  flex-shrink: 0;
+  position: relative;
+  z-index: 1;
+}
+.app-logo-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  line-height: 1;
+}
+.app-icon {
+  width: 56px; height: 56px;
+  border-radius: 12px;
+  display: flex; align-items: center; justify-content: center;
+  box-shadow: 0 2px 10px rgba(15,23,42,0.08);
+  background: linear-gradient(135deg, rgba(255,255,255,0.9), rgba(255,255,255,0.6));
+  border: 1px solid rgba(15,23,42,0.06);
+  padding: 6px;
+}
+.app-icon img {
+  width: 42px;
+  height: 42px;
+  object-fit: contain;
+  display: block;
+  vertical-align: middle;
+}
+.app-name {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text);
+  letter-spacing: -0.01em;
+  display: inline-block;
+  line-height: 1;
+  vertical-align: middle;
+}
+.tbtn {
+  height: 30px; padding: 0 12px;
+  border-radius: 7px;
+  border: 1px solid var(--border);
+  background: transparent;
+  font-size: 12px; font-weight: 600;
+  color: var(--muted);
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  text-decoration: none;
+  display: flex; align-items: center;
+  cursor: pointer; transition: all 0.15s;
+}
+.tbtn:hover { background: var(--bg); color: var(--text); }
+
+.center {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 32px 20px;
+  position: relative;
+  z-index: 1;
+}
+
+.login-card {
+  width: 100%;
+  max-width: 380px;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 4px 24px rgba(15,23,42,0.08);
+  animation: up 0.4s cubic-bezier(0.16,1,0.3,1) both;
+}
+@keyframes up {
+  from { opacity: 0; transform: translateY(16px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.card-strip {
+  height: 3px;
+  background: linear-gradient(90deg, var(--accent), var(--accent2));
+}
+
+.card-body { padding: 32px 30px 26px; }
+
+.card-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 28px;
+}
+.head-icon {
+  width: 68px; height: 68px;
+  background: #fff;
+  border-radius: 16px;
+  display: flex; align-items: center; justify-content: center;
+  box-shadow: 0 6px 18px rgba(15,23,42,0.12);
+  border: 1px solid rgba(15,23,42,0.06);
+  flex-shrink: 0;
+  padding: 6px;
+}
+.head-icon img {
+  width: 52px;
+  height: 52px;
+  object-fit: contain;
+}
+.card-title {
+  font-size: 17px;
+  font-weight: 800;
+  color: var(--text);
+  letter-spacing: -0.03em;
+  line-height: 1.2;
+}
+.card-sub {
+  font-size: 11px;
+  color: var(--muted);
+  margin-top: 2px;
+}
+
+.error-msg {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 9px 12px;
+  background: #fff1f2;
+  border: 1px solid #fecdd3;
+  border-radius: 8px;
+  font-size: 11px;
+  color: #be123c;
+  font-weight: 500;
+  margin-bottom: 16px;
+}
+
+.form-group { margin-bottom: 14px; }
+
+.form-label {
+  display: block;
+  font-size: 9.5px;
+  font-weight: 700;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.09em;
+  font-family: 'JetBrains Mono', monospace;
+  margin-bottom: 6px;
+}
+
+.input-wrap { position: relative; }
+
+.input-icon {
+  position: absolute;
+  left: 11px; top: 50%;
+  transform: translateY(-50%);
+  font-size: 13px;
+  opacity: 0.4;
+  pointer-events: none;
+  transition: opacity 0.15s;
+}
+
+.form-input {
+  width: 100%;
+  padding: 10px 12px 10px 36px;
+  background: var(--soft);
+  border: 1.5px solid var(--border);
+  border-radius: 9px;
+  font-size: 12.5px;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  color: var(--text);
+  outline: none;
+  transition: all 0.18s;
+}
+.form-input::placeholder { color: #cbd5e1; }
+.form-input:focus {
+  border-color: var(--accent);
+  background: #fff;
+  box-shadow: 0 0 0 3px rgba(37,99,235,0.1);
+}
+.input-wrap:focus-within .input-icon { opacity: 0.85; }
+
+.form-select {
+  width: 100%;
+  padding: 10px 12px 10px 12px;
+  background: var(--soft);
+  border: 1.5px solid var(--border);
+  border-radius: 9px;
+  font-size: 12.5px;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  color: var(--text);
+  outline: none;
+  transition: all 0.18s;
+  appearance: none;
+}
+.form-select:focus {
+  border-color: var(--accent);
+  background: #fff;
+  box-shadow: 0 0 0 3px rgba(37,99,235,0.1);
+}
+
+.eye-btn {
+  position: absolute;
+  right: 10px; top: 50%;
+  transform: translateY(-50%);
+  background: none; border: none;
+  cursor: pointer; font-size: 12px;
+  opacity: 0.4; color: var(--muted);
+  transition: opacity 0.15s; padding: 3px;
+}
+.eye-btn:hover { opacity: 0.85; }
+
+.form-extras {
+  text-align: right;
+  margin: -2px 0 20px;
+}
+.forgot {
+  font-size: 10.5px;
+  color: var(--accent);
+  text-decoration: none;
+  font-weight: 500;
+}
+.forgot:hover { text-decoration: underline; }
+
+.submit-btn {
+  width: 100%;
+  padding: 12px;
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  border: none;
+  border-radius: 9px;
+  color: #fff;
+  font-size: 13px;
+  font-weight: 700;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center; gap: 7px;
+  transition: all 0.18s;
+  box-shadow: 0 4px 14px rgba(37,99,235,0.28);
+}
+.submit-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 20px rgba(37,99,235,0.36);
+}
+.submit-btn:active { transform: translateY(0); }
+.arrow { display: inline-block; transition: transform 0.18s; }
+.submit-btn:hover .arrow { transform: translateX(3px); }
+
+.card-footer {
+  padding: 13px 30px 16px;
+  background: var(--soft);
+  border-top: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.reg-text { font-size: 12.5px; color: var(--muted); }
+.reg-text a {
+  color: var(--accent);
+  font-weight: 600;
+  text-decoration: none;
+}
+.reg-text a:hover { text-decoration: underline; }
+.secure {
+  font-size: 9px;
+  color: #94a3b8;
+  font-family: 'JetBrains Mono', monospace;
+}
+
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="app-logo-row">
+    <div class="app-icon">
+      <img src="{% static 'civic/udhavibot-logo.png' %}" alt="UdhaviBot logo">
+    </div>
+    <div class="app-name">UdhaviBot</div>
+  </div>
+  <a href="{% url 'register' %}" class="tbtn">Register</a>
+</div>
+
+<div class="center">
+  <div class="login-card">
+    <div class="card-strip"></div>
+
+    <div class="card-body">
+      <div class="card-head">
+        <div class="head-icon">
+          <img src="{% static 'civic/udhavibot-logo.png' %}" alt="UdhaviBot logo" style="width:30px;height:30px;object-fit:contain;">
+        </div>
+        <div>
+          <div class="card-title" id="login-title">Welcome back</div>
+          <div class="card-sub" id="login-subtitle">Citizen login</div>
+        </div>
+      </div>
+
+      {% if form.errors %}
+      <div class="error-msg">
+        &#9888; Invalid username or password.
+      </div>
+      {% endif %}
+
+      {% if form.non_field_errors %}
+      <div class="error-msg">
+        &#9888; {{ form.non_field_errors|striptags }}
+      </div>
+      {% endif %}
+
+      <form method="post" action="{% url 'login' %}">
+        {% csrf_token %}
+        <input type="hidden" name="next" value="{{ next }}">
+
+        <div class="form-group">
+          <label class="form-label" id="label-username">Username</label>
+          <div class="input-wrap">
+            <span class="input-icon">&#128100;</span>
+            <input
+              type="text"
+              name="username"
+              class="form-input"
+              placeholder="Your username"
+              autocomplete="username"
+              autofocus
+              value="{{ form.username.value|default:'' }}"
+            >
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" id="label-password">Password</label>
+          <div class="input-wrap">
+            <span class="input-icon">&#128273;</span>
+            <input
+              type="password"
+              name="password"
+              id="pwInput"
+              class="form-input"
+              placeholder="Your password"
+              autocomplete="current-password"
+            >
+            <button class="eye-btn" type="button" onclick="togglePw()">&#128065;</button>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" id="label-language">Language Preference</label>
+          <select name="language" class="form-select">
+            <option value="en" {% if preferred_language == 'en' %}selected{% endif %}>English</option>
+            <option value="ta" {% if preferred_language == 'ta' %}selected{% endif %}>Tamil</option>
+            <option value="hi" {% if preferred_language == 'hi' %}selected{% endif %}>Hindi</option>
+            <option value="te" {% if preferred_language == 'te' %}selected{% endif %}>Telugu</option>
+            <option value="ml" {% if preferred_language == 'ml' %}selected{% endif %}>Malayalam</option>
+            <option value="kn" {% if preferred_language == 'kn' %}selected{% endif %}>Kannada</option>
+            <option value="mr" {% if preferred_language == 'mr' %}selected{% endif %}>Marathi</option>
+            <option value="bn" {% if preferred_language == 'bn' %}selected{% endif %}>Bengali</option>
+          </select>
+        </div>
+
+        <div class="form-extras">
+          <a href="#" class="forgot" id="forgot-link">Forgot password?</a>
+        </div>
+
+        <button class="submit-btn" type="submit" id="login-btn">
+          <span id="login-btn-text">Sign in</span> <span class="arrow">&rarr;</span>
+        </button>
+      </form>
+    </div>
+
+    <div class="card-footer">
+      <div class="reg-text"><span id="signup-prefix">New here?</span> <a href="{% url 'register' %}" id="signup-link">Create account</a></div>
+      <div class="secure">&#128274; Secured</div>
+    </div>
+  </div>
+</div>
+
+<script>
+  function togglePw() {
+    const i = document.getElementById('pwInput');
+    i.type = i.type === 'password' ? 'text' : 'password';
+  }
+
+  (function () {
+    const langSelect = document.querySelector("select[name='language']");
+    const defaultLang = "{{ preferred_language|default:'en' }}";
+    const strings = {
+      en: {
+        title: "Welcome back",
+        subtitle: "Citizen login",
+        username: "Username",
+        password: "Password",
+        language: "Language Preference",
+        forgot: "Forgot password?",
+        login: "Sign in",
+        signupPrefix: "New here?",
+        signupLink: "Create account",
+      },
+      ta: {
+        title: "மீண்டும் வருக",
+        subtitle: "குடிமக்கள் உள்நுழைவு",
+        username: "பயனர் பெயர்",
+        password: "கடவுச்சொல்",
+        language: "மொழி விருப்பம்",
+        forgot: "கடவுச்சொல் மறந்துவிட்டதா?",
+        login: "உள்நுழை",
+        signupPrefix: "புதிய பயனர்?",
+        signupLink: "கணக்கு உருவாக்கவும்",
+      },
+      hi: {
+        title: "वापसी पर स्वागत है",
+        subtitle: "नागरिक लॉगिन",
+        username: "यूज़रनेम",
+        password: "पासवर्ड",
+        language: "भाषा चयन",
+        forgot: "पासवर्ड भूल गए?",
+        login: "लॉगिन",
+        signupPrefix: "नए उपयोगकर्ता?",
+        signupLink: "खाता बनाएं",
+      },
+      te: {
+        title: "మళ్లీ స్వాగతం",
+        subtitle: "పౌర లాగిన్",
+        username: "వినియోగదారు పేరు",
+        password: "పాస్‌వర్డ్",
+        language: "భాష ఎంపిక",
+        forgot: "పాస్‌వర్డ్ మర్చిపోయారా?",
+        login: "లాగిన్",
+        signupPrefix: "కొత్త వినియోగదారా?",
+        signupLink: "ఖాతా సృష్టించండి",
+      },
+      ml: {
+        title: "വീണ്ടും സ്വാഗതം",
+        subtitle: "പൗര ലോഗിൻ",
+        username: "ഉപയോക്തൃനാമം",
+        password: "പാസ്‌വേഡ്",
+        language: "ഭാഷ തിരഞ്ഞെടുപ്പ്",
+        forgot: "പാസ്‌വേഡ് മറന്നോ?",
+        login: "ലോഗിൻ",
+        signupPrefix: "പുതിയ ഉപയോക്താവോ?",
+        signupLink: "അക്കൗണ്ട് സൃഷ്ടിക്കുക",
+      },
+      kn: {
+        title: "ಮತ್ತೆ ಸ್ವಾಗತ",
+        subtitle: "ನಾಗರಿಕ ಲಾಗಿನ್",
+        username: "ಬಳಕೆದಾರ ಹೆಸರು",
+        password: "ಪಾಸ್ವರ್ಡ್",
+        language: "ಭಾಷಾ ಆಯ್ಕೆ",
+        forgot: "ಪಾಸ್ವರ್ಡ್ ಮರೆತಿರಾ?",
+        login: "ಲಾಗಿನ್",
+        signupPrefix: "ಹೊಸ ಬಳಕೆದಾರರೇ?",
+        signupLink: "ಖಾತೆ ರಚಿಸಿ",
+      },
+      mr: {
+        title: "पुन्हा स्वागत आहे",
+        subtitle: "नागरिक लॉगिन",
+        username: "वापरकर्तानाव",
+        password: "पासवर्ड",
+        language: "भाषा निवड",
+        forgot: "पासवर्ड विसरलात?",
+        login: "लॉगिन",
+        signupPrefix: "नवीन वापरकर्ता?",
+        signupLink: "खाते तयार करा",
+      },
+      bn: {
+        title: "আবার স্বাগতম",
+        subtitle: "নাগরিক লগইন",
+        username: "ইউজারনেম",
+        password: "পাসওয়ার্ড",
+        language: "ভাষা নির্বাচন",
+        forgot: "পাসওয়ার্ড ভুলে গেছেন?",
+        login: "লগইন",
+        signupPrefix: "নতুন ব্যবহারকারী?",
+        signupLink: "অ্যাকাউন্ট তৈরি করুন",
+      },
+    };
+
+    function applyLanguage(lang) {
+      const t = strings[lang] || strings.en;
+      document.getElementById("login-title").textContent = t.title;
+      document.getElementById("login-subtitle").textContent = t.subtitle;
+      document.getElementById("label-username").textContent = t.username;
+      document.getElementById("label-password").textContent = t.password;
+      document.getElementById("forgot-link").textContent = t.forgot;
+      document.getElementById("login-btn-text").textContent = t.login;
+      document.getElementById("signup-prefix").textContent = t.signupPrefix;
+      document.getElementById("signup-link").textContent = t.signupLink;
+    }
+
+      applyLanguage((langSelect && langSelect.value) || defaultLang);
+      if (langSelect) {
+        langSelect.addEventListener("change", (e) => applyLanguage(e.target.value));
+      }
+    })();
+</script>
+</body>
+</html>

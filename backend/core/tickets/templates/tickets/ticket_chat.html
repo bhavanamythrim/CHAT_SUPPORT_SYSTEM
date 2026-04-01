@@ -1,0 +1,62 @@
+﻿{% extends "base.html" %}
+
+{% block title %}{{ ticket.title }} | CHAT4U{% endblock %}
+
+{% block content %}
+<section class="fade-in">
+    <div class="page-hero">
+        <div>
+            <h1 class="page-title">{{ ticket.title }}</h1>
+            <p class="page-subtitle">Live conversation for this support request.</p>
+        </div>
+        <div class="stats-row">
+            <span class="badge badge-{{ ticket.status }}">{{ ticket.get_status_display }}</span>
+            {% if is_chat_closed %}
+                <span class="unread">Chat Closed</span>
+            {% endif %}
+            <a class="btn btn-secondary" href="{% url 'ticket-list-view' %}">Back to Tickets</a>
+        </div>
+    </div>
+
+    <div class="chat-layout">
+        <div class="chat-ticket-summary">
+            {{ ticket.description }}
+        </div>
+
+        <div class="card">
+            <div class="card-body">
+                <div class="chat-box">
+                    {% for msg in messages %}
+                        <article class="msg {% if msg.sender == request.user %}msg-self{% endif %}">
+                            <div class="msg-meta">
+                                {{ msg.sender.username }}
+                                {% if msg.sender.is_superuser or msg.sender.is_staff %}
+                                    <span class="role-pill role-admin">Admin</span>
+                                {% elif msg.sender.role == 'ADMIN' %}
+                                    <span class="role-pill role-admin">Admin</span>
+                                {% else %}
+                                    <span class="role-pill role-customer">Customer</span>
+                                {% endif %}
+                                {{ msg.timestamp|date:"d M Y, H:i" }}
+                            </div>
+                            <div>{{ msg.text }}</div>
+                        </article>
+                    {% empty %}
+                        <div class="ticket-meta">No messages yet. Start the conversation below.</div>
+                    {% endfor %}
+                </div>
+
+                {% if is_chat_closed %}
+                    <p class="meta-link">This chat room is closed. New messages are disabled.</p>
+                {% else %}
+                    <form class="chat-form" method="POST" action="{% url 'send-message' room.id %}">
+                        {% csrf_token %}
+                        <input type="text" name="message" placeholder="Type your response" required>
+                        <button class="btn btn-primary" type="submit">Send</button>
+                    </form>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}

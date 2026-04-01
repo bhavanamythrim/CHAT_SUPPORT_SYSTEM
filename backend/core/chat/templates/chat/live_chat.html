@@ -1,0 +1,93 @@
+﻿{% extends "base.html" %}
+
+{% block title %}Live Civic Assistant | CHAT4U{% endblock %}
+
+{% block content %}
+<section class="fade-in">
+    <div class="page-hero">
+        <div>
+            <h1 class="page-title">Live Civic Assistant</h1>
+            <p class="page-subtitle">Real-time help for post office, water board, electricity board, and municipal services.</p>
+        </div>
+        <div class="stats-row">
+            <span class="stat-chip">Room: {{ room.id }}</span>
+            <span class="stat-chip">Status: {% if room.is_closed %}Closed{% else %}Active{% endif %}</span>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-body">
+            <div id="chat-box" class="chat-box">
+                {% for msg in messages %}
+                    <article class="msg {% if msg.sender == request.user %}msg-self{% endif %}">
+                        <div class="msg-meta">{{ msg.sender.username }} - {{ msg.timestamp|date:"d M Y, H:i" }}</div>
+                        <div>{{ msg.text }}</div>
+                    </article>
+                {% empty %}
+                    <div class="ticket-meta">No messages yet. Start chatting with the assistant.</div>
+                {% endfor %}
+            </div>
+
+            {% if room.is_closed %}
+                <p class="meta-link">This chat room is closed.</p>
+            {% else %}
+                <form id="chat-form" class="chat-form">
+                    {% csrf_token %}
+                    <input id="message-input" type="text" name="message" placeholder="Type your question..." required>
+                    <button class="btn btn-primary" type="submit">Send</button>
+                </form>
+            {% endif %}
+        </div>
+    </div>
+</section>
+{% endblock %}
+
+{% block head %}
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+    const roomId = {{ room.id }};
+    const chatBox = document.getElementById("chat-box");
+    const form = document.getElementById("chat-form");
+    const input = document.getElementById("message-input");
+    if (!form || !input) return;
+
+    const scheme = window.location.protocol === "https:" ? "wss" : "ws";
+    const socket = new WebSocket(`${scheme}://${window.location.host}/ws/chat/${roomId}/`);
+
+    const scrollToBottom = () => {
+        chatBox.scrollTop = chatBox.scrollHeight;
+    };
+
+    scrollToBottom();
+
+    socket.onmessage = function (event) {
+        const data = JSON.parse(event.data);
+        if (data.type === "error") return;
+
+        const isSelf = data.sender === "{{ request.user.username }}";
+        const article = document.createElement("article");
+        article.className = isSelf ? "msg msg-self" : "msg";
+
+        const meta = document.createElement("div");
+        meta.className = "msg-meta";
+        meta.textContent = data.sender;
+
+        const text = document.createElement("div");
+        text.textContent = data.message;
+
+        article.appendChild(meta);
+        article.appendChild(text);
+        chatBox.appendChild(article);
+        scrollToBottom();
+    };
+
+    form.addEventListener("submit", function (e) {
+        e.preventDefault();
+        const message = input.value.trim();
+        if (!message || socket.readyState !== WebSocket.OPEN) return;
+        socket.send(JSON.stringify({ message }));
+        input.value = "";
+    });
+});
+</script>
+{% endblock %}

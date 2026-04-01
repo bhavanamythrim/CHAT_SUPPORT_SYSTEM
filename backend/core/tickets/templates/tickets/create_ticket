@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Create Ticket</title>
+</head>
+<body>
+    <h1>Create a New Ticket</h1>
+
+    <form method="POST">
+        {% csrf_token %}
+        <label for="title">Title:</label><br>
+        <input type="text" id="title" name="title" required><br><br>
+
+        <label for="description">Description:</label><br>
+        <textarea id="description" name="description" rows="5" cols="40" required></textarea><br><br>
+
+        <button type="submit">Create Ticket</button>
+    </form>
+
+    <br>
+    <a href="{% url 'ticket-list-view' %}">Back to Ticket List</a>
+</body>
+</html>

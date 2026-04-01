@@ -1,0 +1,53 @@
+﻿{% extends "base.html" %}
+
+{% block title %}Tickets | CHAT4U{% endblock %}
+
+{% block content %}
+<section class="fade-in">
+    <div class="page-hero">
+        <div>
+            <h1 class="page-title">Support Tickets</h1>
+            <p class="page-subtitle">Review active conversations and jump into unresolved issues.</p>
+        </div>
+        <div class="stats-row">
+            <span class="stat-chip">Total Tickets: {{ tickets|length }}</span>
+            {% if not request.user.is_staff and not request.user.is_superuser and request.user.role == 'CUSTOMER' %}
+                <a class="btn btn-primary" href="{% url 'create-ticket' %}">Create Ticket</a>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-body">
+            <ul class="list">
+                {% for ticket in tickets %}
+                    <li class="ticket-item">
+                        <div class="ticket-head">
+                            <h2 class="ticket-title">{{ ticket.title }}</h2>
+                            <span class="badge badge-{{ ticket.status }}">{{ ticket.get_status_display }}</span>
+                        </div>
+
+                        <div class="ticket-meta">
+                            Department: {{ ticket.get_department_display }}<br>
+                            Created by: {{ ticket.created_by.username }} | {{ ticket.created_at|date:"d M Y, H:i" }}<br>
+                            {{ ticket.description|truncatechars:120 }}
+                        </div>
+
+                        <div class="ticket-actions">
+                            <a class="btn btn-secondary" href="{% url 'ticket-chat' ticket.id %}">Open Chat</a>
+                            {% if ticket.unread_count > 0 %}
+                                <span class="unread">{{ ticket.unread_count }} new</span>
+                            {% endif %}
+                        </div>
+                    </li>
+                {% empty %}
+                    <li class="ticket-item">
+                        <h2 class="ticket-title">No tickets yet</h2>
+                        <div class="ticket-meta">Create your first support ticket to start a chat.</div>
+                    </li>
+                {% endfor %}
+            </ul>
+        </div>
+    </div>
+</section>
+{% endblock %}

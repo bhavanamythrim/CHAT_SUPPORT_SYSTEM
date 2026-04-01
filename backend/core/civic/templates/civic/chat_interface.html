@@ -1,0 +1,116 @@
+﻿{% extends "base.html" %}
+{% block title %}Civic Chat{% endblock %}
+{% block content %}
+<section class="fade-in">
+  <div class="page-hero">
+    <div>
+      <h1 class="page-title">Civic Assistant Chat</h1>
+      <p class="page-subtitle">Session ID: {{ session.complaint_tracking_id }}</p>
+    </div>
+    <div class="stats-row">
+      <a class="btn btn-secondary" href="{% url 'civic-profile' %}">Profile</a>
+      <span id="socket-status" class="stat-chip">Connecting...</span>
+    </div>
+  </div>
+  <div class="card"><div class="card-body">
+    <div id="chat-box" class="chat-box">
+      {% for msg in messages %}
+      <article class="msg {% if msg.sender and msg.sender_id == request.user.id %}msg-self{% endif %}">
+        <div class="msg-meta">{{ msg.sender_role }} - {{ msg.created_at|date:"d M Y, H:i" }}</div>
+        <div>{{ msg.content }}</div>
+      </article>
+      {% empty %}<div class="ticket-meta">Start chatting for local civic help.</div>{% endfor %}
+    </div>
+    <form id="chat-form" class="chat-form">
+      <input id="chat-input" type="text" placeholder="Ask in English or Tamil..." required>
+      <button class="btn btn-primary" type="submit">Send</button>
+    </form>
+  </div></div>
+</section>
+<script>
+(function(){
+  const sessionId = {{ session.id }};
+  const box = document.getElementById("chat-box");
+  const form = document.getElementById("chat-form");
+  const input = document.getElementById("chat-input");
+  const status = document.getElementById("socket-status");
+  const scheme = window.location.protocol === "https:" ? "wss" : "ws";
+  const socket = new WebSocket(`${scheme}://${window.location.host}/ws/civic/chat/${sessionId}/`);
+
+  function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== "") {
+      const cookies = document.cookie.split(";");
+      for (let i = 0; i < cookies.length; i += 1) {
+        const cookie = cookies[i].trim();
+        if (cookie.substring(0, name.length + 1) === `${name}=`) {
+          cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+          break;
+        }
+      }
+    }
+    return cookieValue;
+  }
+
+  function append(role, text, self) {
+    const art = document.createElement("article");
+    art.className = self ? "msg msg-self" : "msg";
+    const meta = document.createElement("div");
+    meta.className = "msg-meta";
+    meta.textContent = role;
+    const body = document.createElement("div");
+    body.textContent = text;
+    art.appendChild(meta); art.appendChild(body);
+    box.appendChild(art); box.scrollTop = box.scrollHeight;
+  }
+
+  socket.onmessage = (ev) => {
+    const data = JSON.parse(ev.data);
+    if (data.user_message) append(data.user_message.sender_role, data.user_message.content, true);
+    if (data.ai_message) append(data.ai_message.sender_role, data.ai_message.content, false);
+  };
+
+  socket.onopen = () => { status.textContent = "Live"; };
+  socket.onclose = () => { status.textContent = "Offline mode"; };
+  socket.onerror = () => { status.textContent = "Offline mode"; };
+
+  async function sendViaHttp(message) {
+    const body = new URLSearchParams();
+    body.append("session_id", String(sessionId));
+    body.append("content", message);
+
+    const resp = await fetch("{% url 'civic-chat-send' %}", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/x-www-form-urlencoded",
+        "X-CSRFToken": getCookie("csrftoken"),
+      },
+      body: body.toString(),
+      credentials: "same-origin",
+    });
+
+    if (!resp.ok) {
+      throw new Error(`HTTP ${resp.status}`);
+    }
+
+    const data = await resp.json();
+    if (data.user_message) append(data.user_message.sender_role, data.user_message.content, true);
+    if (data.ai_message) append(data.ai_message.sender_role, data.ai_message.content, false);
+  }
+
+  form.addEventListener("submit", (e) => {
+    e.preventDefault();
+    const msg = input.value.trim();
+    if (!msg) return;
+    if (socket.readyState === WebSocket.OPEN) {
+      socket.send(JSON.stringify({message: msg}));
+    } else {
+      sendViaHttp(msg).catch(() => {
+        status.textContent = "Send failed";
+      });
+    }
+    input.value = "";
+  });
+})();
+</script>
+{% endblock %}
