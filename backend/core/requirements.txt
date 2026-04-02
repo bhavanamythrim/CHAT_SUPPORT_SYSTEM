@@ -1,0 +1,12 @@
+Django
+djangorestframework
+djangorestframework-simplejwt
+channels
+python-dotenv
+langdetect
+rapidfuzz
+openai
+anthropic
+google-genai
+gunicorn
+uvicorn
