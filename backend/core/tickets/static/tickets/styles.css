@@ -215,17 +215,18 @@ a {
 .brand-logo-img {
   width: 32px;
   height: 32px;
-  border-radius: 6px;
+  border-radius: 8px;
   object-fit: contain;
-  background: transparent;
-  padding: 0;
+  background: rgba(255, 255, 255, 0.92);
+  padding: 3px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.12);
   display: block;
   vertical-align: middle;
 }
 
 [data-theme='dark'] .brand-logo-img {
-  background: rgba(255, 255, 255, 0.9);
-  padding: 2px;
+  background: rgba(255, 255, 255, 0.95);
+  padding: 3px;
   border-radius: 8px;
 }
 

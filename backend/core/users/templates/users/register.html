@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -91,8 +91,8 @@ body::after {
   padding: 6px;
 }
 .app-icon img {
-  width: 42px;
-  height: 42px;
+  width: 100%;
+  height: 100%;
   object-fit: contain;
   display: block;
   vertical-align: middle;
@@ -166,11 +166,11 @@ body::after {
   box-shadow: 0 6px 18px rgba(15,23,42,0.12);
   border: 1px solid rgba(15,23,42,0.06);
   flex-shrink: 0;
-  padding: 6px;
+  padding: 8px;
 }
 .head-icon img {
-  width: 52px;
-  height: 52px;
+  width: 100%;
+  height: 100%;
   object-fit: contain;
 }
 .card-title {
@@ -328,7 +328,7 @@ body::after {
     <div class="card-body">
       <div class="card-head">
         <div class="head-icon">
-          <img src="{% static 'civic/udhavibot-logo.png' %}" alt="UdhaviBot logo" style="width:30px;height:30px;object-fit:contain;">
+          <img src="{% static 'civic/udhavibot-logo.png' %}" alt="UdhaviBot logo">
         </div>
         <div>
           <div class="card-title" id="register-title">Create account</div>
@@ -455,13 +455,13 @@ body::after {
         language: "ഭാഷ തിരഞ്ഞെടുപ്പ്",
         register: "അക്കൗണ്ട് സൃഷ്ടിക്കുക",
         loginPrefix: "ഇതിനകം രജിസ്റ്റർ ചെയ്തിട്ടുണ്ടോ?",
-        loginLink: "ലോഗിൻ പോകുക",
+        loginLink: "ലോഗിൻ പോവുക",
       },
       kn: {
         title: "ಖಾತೆ ರಚಿಸಿ",
-        subtitle: "ನಾಗರಿಕ ನೋಂದಣಿ",
+        subtitle: "ನಾಗરિક ನೋಂದಣಿ",
         username: "ಬಳಕೆದಾರ ಹೆಸರು",
-        password: "ಪಾಸ್ವರ್ಡ್",
+        password: "ಪಾಸ್‌ವರ್ಡ್",
         language: "ಭಾಷಾ ಆಯ್ಕೆ",
         register: "ಖಾತೆ ರಚಿಸಿ",
         loginPrefix: "ಈಗಾಗಲೇ ನೋಂದಾಯಿಸಿದ್ದೀರಾ?",
@@ -484,28 +484,29 @@ body::after {
         password: "পাসওয়ার্ড",
         language: "ভাষা নির্বাচন",
         register: "অ্যাকাউন্ট তৈরি করুন",
-        loginPrefix: "আগে থেকেই নিবন্ধিত?",
+        loginPrefix: "আগেই নিবন্ধিত?",
         loginLink: "লগইনে যান",
       },
     };
 
     function applyLanguage(lang) {
       const t = strings[lang] || strings.en;
-      document.getElementById("register-title").textContent = t.title;
-      document.getElementById("register-subtitle").textContent = t.subtitle;
-      document.getElementById("label-username").textContent = t.username;
-      document.getElementById("label-password").textContent = t.password;
-      document.getElementById("label-language").textContent = t.language;
-      document.getElementById("register-btn-text").textContent = t.register;
-      document.getElementById("login-prefix").textContent = t.loginPrefix;
-      document.getElementById("login-link").textContent = t.loginLink;
+      document.getElementById('register-title').textContent = t.title;
+      document.getElementById('register-subtitle').textContent = t.subtitle;
+      document.getElementById('label-username').textContent = t.username;
+      document.getElementById('label-password').textContent = t.password;
+      document.getElementById('label-language').textContent = t.language;
+      document.getElementById('register-btn-text').textContent = t.register;
+      document.getElementById('login-prefix').textContent = t.loginPrefix;
+      document.getElementById('login-link').textContent = t.loginLink;
     }
 
     if (langSelect) {
       applyLanguage(langSelect.value);
-      langSelect.addEventListener("change", (e) => applyLanguage(e.target.value));
+      langSelect.addEventListener('change', (e) => applyLanguage(e.target.value));
     }
   })();
 </script>
 </body>
 </html>
+

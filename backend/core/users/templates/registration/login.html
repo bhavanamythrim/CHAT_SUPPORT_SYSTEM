@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -91,8 +91,8 @@ body::after {
   padding: 6px;
 }
 .app-icon img {
-  width: 42px;
-  height: 42px;
+  width: 100%;
+  height: 100%;
   object-fit: contain;
   display: block;
   vertical-align: middle;
@@ -166,11 +166,11 @@ body::after {
   box-shadow: 0 6px 18px rgba(15,23,42,0.12);
   border: 1px solid rgba(15,23,42,0.06);
   flex-shrink: 0;
-  padding: 6px;
+  padding: 8px;
 }
 .head-icon img {
-  width: 52px;
-  height: 52px;
+  width: 100%;
+  height: 100%;
   object-fit: contain;
 }
 .card-title {
@@ -352,7 +352,7 @@ body::after {
     <div class="card-body">
       <div class="card-head">
         <div class="head-icon">
-          <img src="{% static 'civic/udhavibot-logo.png' %}" alt="UdhaviBot logo" style="width:30px;height:30px;object-fit:contain;">
+          <img src="{% static 'civic/udhavibot-logo.png' %}" alt="UdhaviBot logo">
         </div>
         <div>
           <div class="card-title" id="login-title">Welcome back</div>
@@ -472,7 +472,7 @@ body::after {
         signupLink: "கணக்கு உருவாக்கவும்",
       },
       hi: {
-        title: "वापसी पर स्वागत है",
+        title: "फिर से स्वागत है",
         subtitle: "नागरिक लॉगिन",
         username: "यूज़रनेम",
         password: "पासवर्ड",
@@ -506,13 +506,13 @@ body::after {
       },
       kn: {
         title: "ಮತ್ತೆ ಸ್ವಾಗತ",
-        subtitle: "ನಾಗರಿಕ ಲಾಗಿನ್",
+        subtitle: "ನಾಗরিক ಲಾಗಿನ್",
         username: "ಬಳಕೆದಾರ ಹೆಸರು",
-        password: "ಪಾಸ್ವರ್ಡ್",
+        password: "ಪಾಸ್‌ವರ್ಡ್",
         language: "ಭಾಷಾ ಆಯ್ಕೆ",
-        forgot: "ಪಾಸ್ವರ್ಡ್ ಮರೆತಿರಾ?",
+        forgot: "ಪಾಸ್‌ವರ್ಡ್ ಮರೆತಿರಾ?",
         login: "ಲಾಗಿನ್",
-        signupPrefix: "ಹೊಸ ಬಳಕೆದಾರರೇ?",
+        signupPrefix: "ಹೊಸ ಬಳಕೆದಾರರೆ?",
         signupLink: "ಖಾತೆ ರಚಿಸಿ",
       },
       mr: {
@@ -541,21 +541,23 @@ body::after {
 
     function applyLanguage(lang) {
       const t = strings[lang] || strings.en;
-      document.getElementById("login-title").textContent = t.title;
-      document.getElementById("login-subtitle").textContent = t.subtitle;
-      document.getElementById("label-username").textContent = t.username;
-      document.getElementById("label-password").textContent = t.password;
-      document.getElementById("forgot-link").textContent = t.forgot;
-      document.getElementById("login-btn-text").textContent = t.login;
-      document.getElementById("signup-prefix").textContent = t.signupPrefix;
-      document.getElementById("signup-link").textContent = t.signupLink;
+      document.getElementById('login-title').textContent = t.title;
+      document.getElementById('login-subtitle').textContent = t.subtitle;
+      document.getElementById('label-username').textContent = t.username;
+      document.getElementById('label-password').textContent = t.password;
+      document.getElementById('label-language').textContent = t.language;
+      document.getElementById('forgot-link').textContent = t.forgot;
+      document.getElementById('login-btn-text').textContent = t.login;
+      document.getElementById('signup-prefix').textContent = t.signupPrefix;
+      document.getElementById('signup-link').textContent = t.signupLink;
     }
 
-      applyLanguage((langSelect && langSelect.value) || defaultLang);
-      if (langSelect) {
-        langSelect.addEventListener("change", (e) => applyLanguage(e.target.value));
-      }
-    })();
+    applyLanguage((langSelect && langSelect.value) || defaultLang);
+    if (langSelect) {
+      langSelect.addEventListener('change', (e) => applyLanguage(e.target.value));
+    }
+  })();
 </script>
 </body>
 </html>
+

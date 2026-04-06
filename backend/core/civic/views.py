@@ -306,6 +306,7 @@ def settings_page(request):
 
     if request.method == "POST":
         action = (request.POST.get("action") or "").strip()
+        allowed_langs = {"en", "ta", "hi", "te", "ml", "kn", "mr", "bn"}
 
         if action == "update_account":
             user.email = (request.POST.get("email") or "").strip()
@@ -340,7 +341,7 @@ def settings_page(request):
                 profile.theme = theme
             if font_size in {"normal", "large", "xlarge"}:
                 profile.font_size = font_size
-            if language in {"en", "ta"}:
+            if language in allowed_langs:
                 profile.language = language
             profile.save(update_fields=["theme", "font_size", "language", "updated_at"])
             messages.success(request, "Appearance settings saved.")
@@ -348,7 +349,7 @@ def settings_page(request):
 
         if action == "update_chat":
             chat_language = request.POST.get("chat_language", "en")
-            if chat_language in {"en", "ta"}:
+            if chat_language in allowed_langs:
                 profile.chat_language = chat_language
             profile.mic_enabled = "mic_enabled" in request.POST
             profile.quick_chips_enabled = "quick_chips_enabled" in request.POST
@@ -399,7 +400,7 @@ def settings_toggle(request):
         return JsonResponse({"error": "Invalid theme"}, status=400)
     if field == "font_size" and value not in {"normal", "large", "xlarge"}:
         return JsonResponse({"error": "Invalid font_size"}, status=400)
-    if field in {"chat_language", "language"} and value not in {"en", "ta"}:
+    if field in {"chat_language", "language"} and value not in {"en", "ta", "hi", "te", "ml", "kn", "mr", "bn"}:
         return JsonResponse({"error": "Invalid language"}, status=400)
 
     profile, _ = UserProfile.objects.get_or_create(user=request.user)
