@@ -10,3 +10,4 @@ anthropic
 google-genai
 gunicorn
 uvicorn
+whitenoise
